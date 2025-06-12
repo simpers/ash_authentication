@@ -27,6 +27,7 @@ erl_crash.dump
 ash_authentication-*.tar
 
 # lsp
+.elixir-tools/
 .elixir_ls/
 
 # Temporary files, for example, from tests.
