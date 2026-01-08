@@ -26,8 +26,9 @@ defmodule Example do
     resource Example.UserWithTokenRequired
     resource Example.UserWithTotp
     resource Example.UserWithTotpConfirmSetup
-    resource Example.UserWithWildcardAndExclusions
     resource Example.UserWithExtraClaims
+    resource Example.UserWithWildcardAndExclusions
+    resource Example.WebAuthnKey
   end
 
   json_api do

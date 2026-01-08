@@ -169,6 +169,9 @@ defmodule Example.User do
       change Example.GenericOAuth2Change
       change AshAuthentication.Strategy.OAuth2.IdentityChange
     end
+
+    create :register_with_web_authn do
+    end
   end
 
   calculations do
@@ -330,11 +333,18 @@ defmodule Example.User do
         authorization_params scope: "openid profile email"
         identity_resource Example.UserIdentity
       end
+
+      web_authn do
+        key_resource Example.WebAuthnKey
+        relying_party "example.com"
+        require_identity? false
+      end
     end
   end
 
   relationships do
     has_many :valid_api_keys, Example.ApiKey
+    has_many :web_authn_keys, Example.WebAuthnKey
   end
 
   identities do
