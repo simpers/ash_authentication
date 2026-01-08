@@ -23,6 +23,7 @@ defmodule Example do
     resource Example.UserWithSelectiveStrategyIncludes
     resource Example.UserWithTokenRequired
     resource Example.UserWithWildcardAndExclusions
+    resource Example.WebAuthnKey
   end
 
   json_api do
