@@ -225,14 +225,16 @@ defmodule AshAuthentication.MixProject do
       # See https://github.com/team-alembic/ash_authentication/issues/1097
       {:assent, "> 0.2.0 and < 0.3.0"},
       {:bcrypt_elixir, "~> 3.0"},
+      {:cbor, "~> 1.0", optional: true},
       {:castore, "~> 1.0"},
       {:finch, "~> 0.19"},
-      {:igniter, "~> 0.4", optional: true},
+      {:igniter, "~> 0.6.30", optional: true},
       {:jason, "~> 1.4"},
       {:joken, "~> 2.5"},
       {:plug, "~> 1.13"},
-      {:spark, "~> 2.0"},
+      {:spark, "~> 2.3"},
       {:splode, "~> 0.2"},
+      {:wax_, "~> 0.7.0", optional: true},
 
       # Dev/test
       {:absinthe_plug, "~> 1.5", only: [:dev, :test]},
