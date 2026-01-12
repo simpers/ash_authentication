@@ -37,3 +37,6 @@ ash_authentication-*.tar
 priv/plts
 
 .claude
+
+AGENTS.md
+opencode.jsonc
