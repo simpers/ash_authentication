@@ -206,7 +206,9 @@ defmodule AshAuthentication.WebAuthnKey do
   use Spark.Dsl.Extension,
     sections: @dsl,
     transformers: [
-      AshAuthentication.WebAuthnKey.Transformer,
+      AshAuthentication.WebAuthnKey.Transformer
+    ],
+    verifiers: [
       AshAuthentication.WebAuthnKey.Verifier
     ]
 end

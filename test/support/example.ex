@@ -10,6 +10,8 @@ defmodule Example do
     resource Example.ApiKey
     resource Example.AuditLog
     resource Example.AuditLogNoExpiry
+    resource Example.MultiTenantUserWithWebAuthn
+    resource Example.MultiTenantWebAuthnCredential
     resource Example.OidcConnection
     resource Example.RecoveryCode
     resource Example.Token
@@ -22,8 +24,10 @@ defmodule Example do
     resource Example.UserWithExcludedStrategies
     resource Example.UserWithExplicitIncludes
     resource Example.UserWithExtraClaims
+    resource Example.UserWithExtraClaims
     resource Example.UserWithFailingSender
     resource Example.UserWithOtp
+    resource Example.UserWithRecoveryCodes
     resource Example.UserWithRecoveryCodes
     resource Example.UserWithRegisterMagicLink
     resource Example.UserWithRegisterOtp
@@ -32,16 +36,10 @@ defmodule Example do
     resource Example.UserWithTokenRequired
     resource Example.UserWithTotp
     resource Example.UserWithTotpConfirmSetup
-    resource Example.UserWithWildcardAndExclusions
-
     resource Example.UserWithWebAuthn
-
+    resource Example.UserWithWildcardAndExclusions
     resource Example.WebAuthnCredential
-    resource Example.MultiTenantUserWithWebAuthn
-    resource Example.MultiTenantWebAuthnCredential
-
     resource Example.WebAuthnKey
-
   end
 
   json_api do
