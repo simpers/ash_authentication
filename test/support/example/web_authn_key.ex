@@ -11,9 +11,7 @@ defmodule Example.WebAuthnKey do
     extensions: [AshAuthentication.WebAuthnKey]
 
   web_authn_key do
-    user_resource Example.User
-    user_id_attribute_name :user
-    user_relationship_name :user
+    user_resource Example.UserWithWebAuthn
   end
 
   attributes do
@@ -21,7 +19,7 @@ defmodule Example.WebAuthnKey do
   end
 
   relationships do
-    belongs_to :user, Example.User
+    belongs_to :user, Example.UserWithWebAuthn
   end
 
   postgres do

@@ -12,7 +12,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.TransformerTest do
 
   describe "default action names" do
     test "it sets all four begin/finish action names" do
-      assert {:ok, strategy} = Info.strategy(Example.User, :web_authn)
+      assert {:ok, strategy} = Info.strategy(Example.UserWithWebAuthn, :web_authn)
 
       assert strategy.register_begin_action_name == :register_begin_with_web_authn
       assert strategy.register_finish_action_name == :register_finish_with_web_authn
