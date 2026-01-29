@@ -7,6 +7,6 @@ defmodule AshAuthentication.Strategy.WebAuthn.Verifier do
 
   @doc false
   def verify(_strategy, _dsl_state) do
-    nil
+    :ok
   end
 end
