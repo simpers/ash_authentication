@@ -102,8 +102,6 @@ Notes:
 
 **Exit criteria:** we can generate options and verify responses through the adapter API. ✅
 
-**Exit criteria:** we can generate options and verify responses through the adapter API.
-
 ---
 
 ### PR 3 — Define the `WebAuthnKey` resource contract (data model MVP)
