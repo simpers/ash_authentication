@@ -4,16 +4,33 @@
 
 defmodule Example.AuthPlug do
   @moduledoc false
+
   use AshAuthentication.Plug, otp_app: :ash_authentication
 
-  @impl true
+  require Logger
 
+  @impl AshAuthentication.Plug
   def handle_success(conn, {strategy, phase}, nil, nil) do
     conn
     |> put_resp_header("content-type", "application/json")
     |> send_resp(
       200,
       Jason.encode!(%{status: :success, strategy: strategy, phase: phase})
+    )
+  end
+
+  def handle_success(conn, {strategy, phase}, user, _token)
+      when is_map(user) and not is_struct(user) do
+    Logger.warning("We're here, actually?!")
+
+    response =
+      Map.merge(%{status: :success, strategy: strategy, phase: phase}, user)
+
+    conn
+    |> put_resp_header("content-type", "application/json")
+    |> send_resp(
+      200,
+      Jason.encode!(response)
     )
   end
 
@@ -33,7 +50,7 @@ defmodule Example.AuthPlug do
     )
   end
 
-  @impl true
+  @impl AshAuthentication.Plug
   def handle_failure(conn, {strategy, phase}, reason) do
     conn
     |> put_resp_header("content-type", "application/json")

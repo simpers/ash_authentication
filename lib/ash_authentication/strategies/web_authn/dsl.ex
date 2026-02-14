@@ -8,6 +8,8 @@ defmodule AshAuthentication.Strategy.WebAuthn.Dsl do
   alias AshAuthentication.Strategy.WebAuthn
   alias Spark.Dsl.Entity
 
+  secret_type = AshAuthentication.Dsl.secret_type()
+
   @schema [
     name: [
       type: :atom,
@@ -19,9 +21,13 @@ defmodule AshAuthentication.Strategy.WebAuthn.Dsl do
       doc: "The WebAuthn key resource used to store credentials."
     ],
     relying_party: [
-      type: :string,
-      doc: "The WebAuthn Relying Party identifier (typically your domain name).",
+      type: secret_type,
+      doc: "A runtime WebAuthn Relying Party identifier (typically your domain name).",
       required: true
+    ],
+    origin: [
+      type: secret_type,
+      doc: "A runtime origin for WebAuthn challenges (use a Secret/callback to avoid hardcoding)."
     ],
     require_identity?: [
       type: :boolean,

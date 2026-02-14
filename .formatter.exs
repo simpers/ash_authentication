@@ -137,6 +137,7 @@ spark_locals_without_parens = [
   okta: 2,
   openid_configuration: 1,
   openid_configuration_uri: 1,
+  origin: 1,
   otp: 0,
   otp: 1,
   otp: 2,
