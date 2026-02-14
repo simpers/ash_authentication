@@ -73,34 +73,34 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
       strategy = Info.strategy!(Example.UserWithWebAuthn, :web_authn)
 
       assert strategy.key_resource == Example.WebAuthnKey
-      assert strategy.relying_party == "example.com"
+      assert strategy.relying_party == {Example.UserWithWebAuthn.Secret, []}
       assert strategy.require_identity? == false
       assert strategy.resource == Example.UserWithWebAuthn
     end
   end
 
-  describe "actions (stubs)" do
+  describe "actions" do
     setup do
       {:ok, strategy: Info.strategy!(Example.UserWithWebAuthn, :web_authn)}
     end
 
-    test "register_begin returns :not_implemented", %{strategy: strategy} do
-      assert {:error, :not_implemented} =
+    test "register_begin returns authentication failure without origin", %{strategy: strategy} do
+      assert {:error, %AshAuthentication.Errors.AuthenticationFailed{}} =
                Strategy.action(strategy, :register_begin, %{}, [])
     end
 
-    test "register_finish returns :not_implemented", %{strategy: strategy} do
-      assert {:error, :not_implemented} =
+    test "register_finish returns authentication failure without params", %{strategy: strategy} do
+      assert {:error, %AshAuthentication.Errors.AuthenticationFailed{}} =
                Strategy.action(strategy, :register_finish, %{}, [])
     end
 
-    test "sign_in_begin returns :not_implemented", %{strategy: strategy} do
-      assert {:error, :not_implemented} =
+    test "sign_in_begin returns authentication failure without origin", %{strategy: strategy} do
+      assert {:error, %AshAuthentication.Errors.AuthenticationFailed{}} =
                Strategy.action(strategy, :sign_in_begin, %{}, [])
     end
 
-    test "sign_in_finish returns :not_implemented", %{strategy: strategy} do
-      assert {:error, :not_implemented} =
+    test "sign_in_finish returns authentication failure without params", %{strategy: strategy} do
+      assert {:error, %AshAuthentication.Errors.AuthenticationFailed{}} =
                Strategy.action(strategy, :sign_in_finish, %{}, [])
     end
   end

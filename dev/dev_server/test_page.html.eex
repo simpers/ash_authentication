@@ -15,7 +15,7 @@
 
         <%= for strategy <- strategies do %>
           <%= for phase <- Strategy.phases(strategy) do %>
-            <%= render_strategy(strategy, phase, options) %>
+            <%= render_strategy(strategy, phase, options, @context) %>
           <% end %>
         <% end %>
       <% end %>
@@ -50,6 +50,200 @@
         <% end %>
       </table>
     <% end %>
+
+    <script>
+      (() => {
+        const sections = document.querySelectorAll(".webauthn");
+        if (!sections.length) return;
+
+        const b64uToBuf = (b64u) => {
+          const pad = "=".repeat((4 - (b64u.length % 4)) % 4);
+          const base64 = (b64u + pad).replace(/-/g, "+").replace(/_/g, "/");
+          const bin = atob(base64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          return bytes.buffer;
+        };
+
+        const bufToB64u = (buf) => {
+          const bytes = new Uint8Array(buf);
+          let bin = "";
+          for (const b of bytes) bin += String.fromCharCode(b);
+          return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        };
+
+        const publicKeyFromJSON = (opts) => {
+          const pk = { ...opts };
+          pk.challenge = b64uToBuf(pk.challenge);
+          if (pk.user?.id) pk.user.id = b64uToBuf(pk.user.id);
+          if (pk.excludeCredentials) {
+            pk.excludeCredentials = pk.excludeCredentials.map((c) => ({ ...c, id: b64uToBuf(c.id) }));
+          }
+          if (pk.allowCredentials) {
+            pk.allowCredentials = pk.allowCredentials.map((c) => ({ ...c, id: b64uToBuf(c.id) }));
+          }
+          return pk;
+        };
+
+        const credentialToJSON = (cred) => ({
+          id: cred.id,
+          rawId: bufToB64u(cred.rawId),
+          type: cred.type,
+          response: {
+            clientDataJSON: bufToB64u(cred.response.clientDataJSON),
+            attestationObject:
+              cred.response.attestationObject && bufToB64u(cred.response.attestationObject),
+            authenticatorData:
+              cred.response.authenticatorData && bufToB64u(cred.response.authenticatorData),
+            signature: cred.response.signature && bufToB64u(cred.response.signature),
+            userHandle: cred.response.userHandle && bufToB64u(cred.response.userHandle)
+          }
+        });
+
+        const postJSON = async (url, payload) => {
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const json = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw json;
+          return json;
+        };
+
+        const supportsWebAuthn = !!window.PublicKeyCredential;
+
+        sections.forEach((section) => {
+          const output = section.querySelector(".webauthn-output");
+          const requestOrigin = section.querySelector(".webauthn-request-origin");
+          if (requestOrigin) {
+            requestOrigin.textContent = window.location.origin;
+          }
+          if (!supportsWebAuthn) {
+            output.textContent = "WebAuthn is not supported in this browser.";
+            return;
+          }
+
+          const subjectName = section.dataset.subjectName;
+          const identityInput = section.querySelector(".webauthn-identity");
+          const displayNameInput = section.querySelector(".webauthn-display-name");
+          const signInModeSelect = section.querySelector(".webauthn-sign-in-mode");
+          const authenticatorAttachmentSelect = section.querySelector(
+            ".webauthn-authenticator-attachment"
+          );
+          const residentKeySelect = section.querySelector(".webauthn-resident-key");
+          const requireResidentKeyCheckbox = section.querySelector(".webauthn-require-resident-key");
+          const userVerificationSelect = section.querySelector(".webauthn-user-verification");
+          const attestationSelect = section.querySelector(".webauthn-attestation");
+
+          const buildSubjectParams = (includeDisplayName, allowEmptyIdentity) => {
+            const identityField = section.dataset.identityField;
+            const displayNameField = section.dataset.displayNameField;
+            const params = {};
+            params[subjectName] = {};
+
+            if (identityInput?.value || !allowEmptyIdentity) {
+              params[subjectName][identityField] = identityInput?.value || "";
+            }
+
+            if (includeDisplayName && displayNameInput?.value) {
+              params[subjectName][displayNameField] = displayNameInput.value;
+            }
+
+            return params;
+          };
+
+          const buildPreferenceParams = () => {
+            const preferences = {};
+
+            if (authenticatorAttachmentSelect?.value) {
+              preferences.authenticator_attachment = authenticatorAttachmentSelect.value;
+            }
+
+            if (residentKeySelect?.value) {
+              preferences.resident_key = residentKeySelect.value;
+            }
+
+            if (requireResidentKeyCheckbox?.checked) {
+              preferences.require_resident_key = true;
+            }
+
+            if (userVerificationSelect?.value) {
+              preferences.user_verification = userVerificationSelect.value;
+            }
+
+            if (attestationSelect?.value) {
+              preferences.attestation = attestationSelect.value;
+            }
+
+            return Object.keys(preferences).length > 0 ? preferences : null;
+          };
+
+          const mergePreferences = (payload, preferences) => {
+            if (preferences) {
+              payload[subjectName] = payload[subjectName] || {};
+              payload[subjectName].webauthn_options = preferences;
+            }
+          };
+
+          const extractBeginPayload = (begin) => {
+            return {
+              publicKey: begin.public_key || begin.publicKey || begin.options || begin.public_key_options,
+              stateToken: begin.state_token || begin.stateToken || begin.state
+            };
+          };
+
+          section.querySelector(".webauthn-register")?.addEventListener("click", async () => {
+            output.textContent = "";
+            try {
+              const payload = buildSubjectParams(true, false);
+              const preferences = buildPreferenceParams();
+              mergePreferences(payload, preferences);
+
+              const begin = await postJSON(section.dataset.registerBegin, payload);
+              const { publicKey, stateToken } = extractBeginPayload(begin);
+              const credential = await navigator.credentials.create({
+                publicKey: publicKeyFromJSON(publicKey)
+              });
+              const finishPayload = buildSubjectParams(false, false);
+              finishPayload[subjectName] = finishPayload[subjectName] || {};
+              finishPayload[subjectName].credential = credentialToJSON(credential);
+              finishPayload[subjectName].state_token = stateToken;
+              const finish = await postJSON(section.dataset.registerFinish, finishPayload);
+              output.textContent = JSON.stringify(finish, null, 2);
+            } catch (error) {
+              output.textContent = JSON.stringify(error, null, 2);
+            }
+          });
+
+          section.querySelector(".webauthn-sign-in")?.addEventListener("click", async () => {
+            output.textContent = "";
+            try {
+              const signInMode = signInModeSelect?.value || "no_identity";
+              const allowEmptyIdentity = signInMode !== "require_identity";
+              const payload = buildSubjectParams(false, allowEmptyIdentity);
+
+              const preferences = buildPreferenceParams();
+              mergePreferences(payload, preferences);
+
+              const begin = await postJSON(section.dataset.signInBegin, payload);
+              const { publicKey, stateToken } = extractBeginPayload(begin);
+              const credential = await navigator.credentials.get({
+                publicKey: publicKeyFromJSON(publicKey)
+              });
+              const finishPayload = buildSubjectParams(false, allowEmptyIdentity);
+              finishPayload[subjectName] = finishPayload[subjectName] || {};
+              finishPayload[subjectName].credential = credentialToJSON(credential);
+              finishPayload[subjectName].state_token = stateToken;
+              const finish = await postJSON(section.dataset.signInFinish, finishPayload);
+              output.textContent = JSON.stringify(finish, null, 2);
+            } catch (error) {
+              output.textContent = JSON.stringify(error, null, 2);
+            }
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
 
