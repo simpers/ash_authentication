@@ -81,14 +81,14 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
 
   @impl Adapter
   def new_authentication_challenge(credential_ids_and_keys, opts) do
-    allow_credentials =
+    browser_allow_credentials =
       Enum.map(credential_ids_and_keys, fn {id, _key} ->
         %{type: "public-key", id: id}
       end)
 
     challenge =
       Wax.new_authentication_challenge(
-        allow_credentials: allow_credentials,
+        allow_credentials: credential_ids_and_keys,
         origin: Keyword.fetch!(opts, :origin),
         rp_id: Keyword.get(opts, :rp_id, :auto),
         timeout: Keyword.get(opts, :timeout, 20 * 60),
@@ -100,7 +100,7 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
        challenge: challenge.bytes,
        public_key_credential_options: %{
          challenge: challenge.bytes,
-         allowCredentials: allow_credentials,
+         allowCredentials: browser_allow_credentials,
          rpId: challenge.rp_id,
          timeout: challenge.timeout * 1000,
          userVerification: normalize_user_verification(challenge.user_verification)
@@ -124,7 +124,7 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
         client_data_json,
         signature,
         challenge,
-        _public_key,
+        public_key,
         opts
       ) do
     wax_challenge =
@@ -142,7 +142,8 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
            authenticator_data,
            signature,
            client_data_json,
-           wax_challenge
+           wax_challenge,
+           [{credential_id, public_key}]
          ) do
       {:ok, authenticator_data} ->
         {:ok, %{sign_count: authenticator_data.sign_count}}
