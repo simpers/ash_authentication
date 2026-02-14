@@ -20,6 +20,12 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
   alias AshAuthentication.WebAuthnKey.Info
   alias Spark.{Dsl.Verifier, Error.DslError}
 
+  @valid_public_key_attribute_types [
+    :binary,
+    Ash.Type.Binary,
+    AshAuthentication.Type.CoseKey
+  ]
+
   @doc false
   @spec after?(any) :: boolean()
   def after?(_), do: true
@@ -113,7 +119,12 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
     with {:ok, attr_name} <- Info.web_authn_key_public_key_attribute_name(dsl_state),
          {:ok, attribute} <- find_attribute(dsl_state, attr_name),
          :ok <-
-           validate_attribute_option(attribute, __MODULE__, :type, [:binary, Ash.Type.Binary]),
+           validate_attribute_option(
+             attribute,
+             __MODULE__,
+             :type,
+             @valid_public_key_attribute_types
+           ),
          :ok <- validate_attribute_option(attribute, __MODULE__, :allow_nil?, [false]),
          :ok <- validate_attribute_option(attribute, __MODULE__, :sensitive?, [true]) do
       :ok
@@ -206,6 +217,8 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
     - type: :binary
     - allow_nil?: false
     - sensitive?: true (for credential_id and public_key)
+
+    The public_key attribute may also use AshAuthentication.Type.CoseKey.
 
     Error: #{inspect(error)}
     """

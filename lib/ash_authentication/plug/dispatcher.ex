@@ -8,9 +8,19 @@ defmodule AshAuthentication.Plug.Dispatcher do
   """
 
   @behaviour Plug
+
   alias AshAuthentication.Strategy
+
   alias Plug.Conn
-  import AshAuthentication.Plug.Helpers, only: [get_authentication_result: 1]
+
+  import AshAuthentication.Plug.Helpers,
+    only: [
+      # ash_authentication_request_context_key: 0,
+      get_authentication_result: 1,
+      put_strategy_context: 3,
+      set_http_from_conn: 2
+    ]
+
   import Strategy.RememberMe.Plug.Helpers, only: [maybe_put_remember_me_cookies: 2]
 
   @type config :: {atom, Strategy.t(), module} | module
@@ -18,14 +28,14 @@ defmodule AshAuthentication.Plug.Dispatcher do
   @unsent ~w[unset set set_chunked set_file]a
 
   @doc false
-  @impl true
+  @impl Plug
   @spec init([config]) :: config
   def init([config]), do: config
 
   @doc """
   Send the request to the correct strategy and then return the result.
   """
-  @impl true
+  @impl Plug
   @spec call(Conn.t(), config | any) :: Conn.t()
   def call(conn, {phase, strategy, return_to}) do
     activity = {Strategy.name(strategy), phase}
@@ -33,7 +43,8 @@ defmodule AshAuthentication.Plug.Dispatcher do
     conn =
       conn
       |> drop_params(["glob"])
-      |> add_request_context()
+      |> add_http_request_context()
+      |> add_ash_request_context(strategy, %{name: strategy.name})
 
     strategy
     |> Strategy.plug(phase, conn)
@@ -70,23 +81,35 @@ defmodule AshAuthentication.Plug.Dispatcher do
     return_to.handle_failure(conn, {nil, nil}, :not_found)
   end
 
-  defp drop_params(conn, keys), do: %{conn | params: Map.drop(conn.params, keys)}
+  # # #
+  # ! Private functions
+  # # #
 
-  defp add_request_context(conn) do
-    peer_data = Conn.get_peer_data(conn)
+  defp add_ash_request_context(conn, strategy, value) do
+    context =
+      conn
+      |> get_context()
+      |> put_strategy_context(strategy, value)
 
-    request_context = %{
-      ash_authentication_request: %{
-        remote_ip: peer_data.address |> :inet.ntoa() |> to_string(),
-        remote_port: peer_data.port,
-        http_host: conn.host,
-        http_method: conn.method,
-        forwarded: Conn.get_req_header(conn, "forwarded"),
-        x_forwarded_for: Conn.get_req_header(conn, "x-forwarded-for")
-      }
-    }
-
-    existing_context = Ash.PlugHelpers.get_context(conn) || %{}
-    Ash.PlugHelpers.set_context(conn, Map.merge(existing_context, request_context))
+    set_context(conn, context)
   end
+
+  defp add_http_request_context(conn) do
+    context =
+      conn
+      |> get_context()
+      |> set_http_from_conn(conn)
+
+    set_context(conn, context)
+  end
+
+  defp get_context(conn) do
+    Ash.PlugHelpers.get_context(conn) || %{}
+  end
+
+  defp set_context(conn, context) do
+    Ash.PlugHelpers.set_context(conn, context)
+  end
+
+  defp drop_params(conn, keys), do: %{conn | params: Map.drop(conn.params, keys)}
 end

@@ -7,9 +7,49 @@ defmodule AshAuthentication.Plug.Helpers do
   Authentication helpers for use in your router, etc.
   """
 
+  @compile {:inline, ash_authentication_request_context_key: 0, http_request_context_key: 0}
+
   alias Ash.{PlugHelpers, Resource}
   alias AshAuthentication.{Info, Jwt, Strategy.RememberMe.Plug.Helpers, TokenResource}
+
   alias Plug.Conn
+
+  @root_ash_authentication_request_context_key :ash_authentication_request
+  @root_http_request_context_key :http_request
+
+  def ash_authentication_request_context_key() do
+    @root_ash_authentication_request_context_key
+  end
+
+  def http_request_context_key() do
+    @root_http_request_context_key
+  end
+
+  @doc """
+  Derive a request origin from the generic HTTP request context.
+
+  Returns nil when the context does not include enough information.
+  """
+  @spec origin_from_http_request(map) :: String.t() | nil
+  def origin_from_http_request(context) when is_map(context) do
+    request = Map.get(context, http_request_context_key())
+
+    case request do
+      %{scheme: scheme, http_host: host, port: port} when is_binary(host) ->
+        format_origin(scheme || :http, host, port)
+
+      %{scheme: scheme, host: host, port: port} when is_binary(host) ->
+        format_origin(scheme || :http, host, port)
+
+      %{http_host: host} when is_binary(host) ->
+        format_origin(:http, host, nil)
+
+      _ ->
+        nil
+    end
+  end
+
+  def origin_from_http_request(_), do: nil
 
   @doc """
   Store the user in the connections' session.
@@ -69,6 +109,24 @@ defmodule AshAuthentication.Plug.Helpers do
   end
 
   defp metadata_key(subject_name), do: "#{subject_name}_metadata"
+
+  defp format_origin(scheme, host, port) do
+    normalized_scheme = if is_atom(scheme), do: Atom.to_string(scheme), else: scheme
+
+    cond do
+      is_nil(port) ->
+        "#{normalized_scheme}://#{host}"
+
+      port == 80 and normalized_scheme == "http" ->
+        "#{normalized_scheme}://#{host}"
+
+      port == 443 and normalized_scheme == "https" ->
+        "#{normalized_scheme}://#{host}"
+
+      true ->
+        "#{normalized_scheme}://#{host}:#{port}"
+    end
+  end
 
   @doc """
   Given a list of subjects, turn as many as possible into users.
@@ -531,6 +589,37 @@ defmodule AshAuthentication.Plug.Helpers do
 
   def get_authentication_result(conn), do: conn
 
+  @doc """
+  Add request metadata to the authentication context.
+
+  This is used by strategies that need to resolve runtime configuration based
+  on the incoming request (e.g. WebAuthn origin).
+  """
+  @spec set_http_from_conn(context :: map(), conn :: Conn.t()) :: map()
+  def set_http_from_conn(context, conn) when is_map(context) and is_struct(conn, Conn) do
+    Map.put(context, @root_http_request_context_key, http_request_from_conn(conn))
+  end
+
+  @doc """
+  Store strategy-specific context in the request context map.
+  """
+  @spec put_strategy_context(
+          context :: map(),
+          key_or_strategy :: atom() | AshAuthentication.Strategy.t(),
+          value :: map()
+        ) :: map()
+  def put_strategy_context(context, strategy, value)
+      when is_struct(strategy) do
+    put_strategy_context(context, strategy.name, value)
+  end
+
+  def put_strategy_context(context, key, value)
+      when is_map(context) and is_atom(key) and is_map(value) do
+    context
+    |> Map.put_new(@root_ash_authentication_request_context_key, %{})
+    |> put_in([@root_ash_authentication_request_context_key, key], value)
+  end
+
   # Dynamically generated atoms are generally frowned upon, but in this case
   # the `subject_name` is a statically configured atom, so should be fine.
   # sobelow_skip ["DOS.StringToAtom"]
@@ -542,6 +631,22 @@ defmodule AshAuthentication.Plug.Helpers do
     do: String.to_atom("current_#{subject_name}_token_record")
 
   defp session_key(subject_name), do: "#{subject_name}_token"
+
+  defp http_request_from_conn(%Conn{} = conn) do
+    peer_data = Conn.get_peer_data(conn)
+
+    %{
+      scheme: conn.scheme,
+      host: conn.host,
+      http_host: conn.host,
+      port: conn.port,
+      remote_ip: peer_data.address |> :inet.ntoa() |> to_string(),
+      remote_port: peer_data.port,
+      http_method: conn.method,
+      forwarded: Conn.get_req_header(conn, "forwarded"),
+      x_forwarded_for: Conn.get_req_header(conn, "x-forwarded-for")
+    }
+  end
 
   defp split_identifier(subject, resource) do
     if Info.authentication_session_identifier!(resource) == :jti do
