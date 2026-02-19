@@ -11,7 +11,8 @@ defmodule AshAuthentication.Strategy.WebAuthn do
   @type t :: %__MODULE__{
           name: atom(),
           key_resource: Ash.Resource.t(),
-          relying_party: binary(),
+          relying_party: AshAuthentication.Secret.t() | nil,
+          origin: AshAuthentication.Secret.t() | nil,
           resource: Ash.Resource.t(),
           require_identity?: boolean(),
           register_begin_action_name: atom(),
@@ -25,6 +26,7 @@ defmodule AshAuthentication.Strategy.WebAuthn do
             key_resource: nil,
             resource: nil,
             relying_party: nil,
+            origin: nil,
             require_identity?: false,
             register_begin_action_name: nil,
             register_finish_action_name: nil,
