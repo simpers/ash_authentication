@@ -30,7 +30,8 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
   @spec transform(map) ::
           :ok | {:ok, map} | {:error, term} | {:warn, map, String.t() | [String.t()]} | :halt
   def transform(dsl_state) do
-    with :ok <- verify_cbor_dependency() do
+    with :ok <- verify_cbor_dependency(),
+         :ok <- verify_wax_dependency() do
       {:ok, dsl_state}
     end
   end
@@ -48,6 +49,24 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
          Add it to your dependencies in mix.exs:
 
              {:cbor, "~> 1.0"}
+         """
+       )}
+    end
+  end
+
+  defp verify_wax_dependency do
+    if Code.ensure_loaded?(Wax) do
+      :ok
+    else
+      {:error,
+       DslError.exception(
+         path: [:web_authn_key],
+         message: """
+         The :wax_ dependency is required for WebAuthn support.
+
+         Add it to your dependencies in mix.exs:
+
+             {:wax_, "~> 0.7.0"}
          """
        )}
     end
