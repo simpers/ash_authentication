@@ -171,11 +171,12 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
            {:ok, key} <- fetch_key_by_credential(strategy, credential_id, options),
            {:ok, %{sign_count: sign_count}} <-
              adapter().verify_authentication(
-               key.public_key,
+               credential_id,
                authenticator_data,
                client_data_json,
                signature,
                decode_base64url!(finish_context.claims["challenge"]),
+               key.public_key,
                adapter_verify_opts(
                  strategy,
                  finish_context.claims,
