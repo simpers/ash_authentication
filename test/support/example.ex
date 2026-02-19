@@ -26,6 +26,7 @@ defmodule Example do
     resource Example.UserWithTotp
     resource Example.UserWithTotpConfirmSetup
     resource Example.UserWithExtraClaims
+    resource Example.UserWithWebAuthn
     resource Example.UserWithWildcardAndExclusions
     resource Example.WebAuthnKey
   end
