@@ -6,6 +6,10 @@ defmodule DevServer.Router do
   @moduledoc false
   use Plug.Router
 
+  if Code.ensure_loaded?(Tidewave) do
+    plug(Tidewave)
+  end
+
   plug(Plug.Parsers, parsers: [:urlencoded, :multipart, :json], json_decoder: Jason)
   plug(Plug.Session, store: :ets, key: "_ash_authentication_session", table: DevServer.Session)
   plug(:fetch_session)
