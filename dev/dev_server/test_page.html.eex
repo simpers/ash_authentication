@@ -127,6 +127,7 @@
           const subjectName = section.dataset.subjectName;
           const identityInput = section.querySelector(".webauthn-identity");
           const displayNameInput = section.querySelector(".webauthn-display-name");
+          const keyNameInput = section.querySelector(".webauthn-key-name");
           const signInModeSelect = section.querySelector(".webauthn-sign-in-mode");
           const authenticatorAttachmentSelect = section.querySelector(
             ".webauthn-authenticator-attachment"
@@ -209,6 +210,11 @@
               finishPayload[subjectName] = finishPayload[subjectName] || {};
               finishPayload[subjectName].credential = credentialToJSON(credential);
               finishPayload[subjectName].state_token = stateToken;
+
+              if (keyNameInput?.value?.trim()) {
+                finishPayload[subjectName].key_name = keyNameInput.value.trim();
+              }
+
               const finish = await postJSON(section.dataset.registerFinish, finishPayload);
               output.textContent = JSON.stringify(finish, null, 2);
             } catch (error) {
@@ -246,4 +252,3 @@
     </script>
   </body>
 </html>
-

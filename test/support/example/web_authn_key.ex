@@ -24,6 +24,7 @@ defmodule Example.WebAuthnKey do
 
       accept [
         :credential_id,
+        :name,
         :public_key,
         :sign_count,
         :user_id,
@@ -38,16 +39,18 @@ defmodule Example.WebAuthnKey do
     uuid_v7_primary_key :id
 
     attribute :credential_id, :binary, allow_nil?: false, sensitive?: true
+    attribute :name, :string
     attribute :public_key, AshAuthentication.Type.CoseKey, allow_nil?: false, sensitive?: true
     attribute :sign_count, :integer, allow_nil?: false, default: 0
     attribute :aaguid, :binary
     attribute :transports, {:array, :string}
     attribute :last_used_at, :utc_datetime_usec
-    attribute :user_id, :uuid, allow_nil?: false
   end
 
   relationships do
-    belongs_to :user, Example.UserWithWebAuthn
+    belongs_to :user, Example.UserWithWebAuthn do
+      allow_nil? true
+    end
   end
 
   postgres do
