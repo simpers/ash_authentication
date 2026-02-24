@@ -18,7 +18,23 @@
 - [x] Registration finish input sanitization is fixed (WebAuthn-only params not forwarded to user create)
 - [x] `public_key` can use `AshAuthentication.Type.CoseKey` (transformer/verifier/example aligned)
 - [x] DevServer registration flow now completes end-to-end (`register_begin` + `register_finish`)
-- [x] DevServer sign-in flow appears to complete end-to-end after adapter/authentication fixes (`sign_in_begin` + `sign_in_finish`)
+- [x] DevServer sign-in flow completes end-to-end in manual local testing (`sign_in_begin` + `sign_in_finish`)
+- [x] DevServer now exposes WebAuthn preference knobs and forwards them as `webauthn_options` in begin requests
+- [x] Registration can optionally persist a key display name (`key_name`) when the key resource/action accepts `:name`
+- [x] Current sign-in behavior is discoverable-first (empty identity supported); `require_identity?` mode implementation is still pending
+
+### Graphite stack sync (current)
+
+- [x] PR 1: DevServer `PORT` override (`43a5263`)
+- [x] PR 2: WebAuthn scaffolding safety + CBOR guard (`64b7a24`)
+- [x] PR 3: Wax adapter boundary (`aeb5784`)
+- [x] PR 4: internal tool-versions support commit (`818f672`, ready-to-merge)
+- [x] PR 5: internal `.gitignore` temporary local ignores (`f46f238`)
+- [x] PR 6: DSL schema rename/alignment (`c021bf0`)
+- [x] PR 7: `WebAuthnKey` transformer/info/verifier contract (`915d509`)
+- [x] PR 8: registration flow works (`8e84d61`)
+- [x] PR 9: sign-in flow works (`7aef527`, current branch)
+- [x] Local WIP extends stack with DevServer harness polish + key naming + key resource migration/test updates
 
 ### Known gaps / issues to address early
 
@@ -53,12 +69,12 @@ The MVP should allow:
 
 - [ ] **Register a credential** for an *existing* user (user already created via password/OAuth/etc.)
 - [x] **Sign in** using WebAuthn and receive the same authentication result semantics as other strategies (token in metadata when enabled, etc.) *(validated in DevServer flow; keep hardening with additional tests)*
-- [ ] **Persist** credential material in a `key_resource` and use it to authenticate later
-- [ ] Core security validation:
-  - [ ] challenge binding
-  - [ ] rpId/origin validation (as supported by chosen library)
-  - [ ] signature verification
-  - [ ] sign_count updates (or a documented approach if the library handles it differently)
+- [x] **Persist** credential material in a `key_resource` and use it to authenticate later *(implemented in `register_finish` upsert + `sign_in_finish` credential lookup/update path; broader automated coverage still tracked in PR 6)*
+- [x] Core security validation implemented in action flow *(hardening and negative-path test depth still tracked in PR 6)*:
+  - [x] challenge binding
+  - [x] rpId/origin validation (as supported by chosen library)
+  - [x] signature verification
+  - [x] sign_count updates (plus `last_used_at` update when key update action exists)
 
 Explicitly non-MVP / can be deferred:
 
@@ -102,7 +118,7 @@ Notes:
   - [x] DSL transform produces correct action names
   - [x] Strategy protocol functions don't crash (routes, phases, etc.)
 
-**Exit criteria:** clean compile + WebAuthn modules are internally consistent. ✅
+**Exit criteria:** Implemented: ✅. Manually validated: n/a (compile-time/static checks). Test coverage status: baseline DSL/protocol tests added.
 
 ---
 
@@ -121,7 +137,7 @@ Notes:
 - [x] Add unit tests with fixtures and/or adapter mocks
 - [x] Add compile-time checks for `:cbor` and `:wax_` dependencies
 
-**Exit criteria:** we can generate options and verify responses through the adapter API. ✅
+**Exit criteria:** Implemented: ✅. Manually validated: yes (adapter-backed flow exercised during development). Test coverage status: adapter unit coverage present; deeper edge-case coverage continues in PR 6.
 
 ---
 
@@ -154,7 +170,7 @@ Implementation decisions made:
   - [x] Unique identity on `credential_id`
   - [x] Optional dependencies (`:cbor`, `:wax_`) are present
 
-**Exit criteria:** the strategy can reliably look up a credential and resolve its user. ✅
+**Exit criteria:** Implemented: ✅. Manually validated: yes (resource contract used by working register/sign-in flow). Test coverage status: contract/verifier behavior covered; negative-path depth continues in PR 6.
 
 ---
 
@@ -175,7 +191,7 @@ Implementation decisions made:
   - [x] Decide where signing happens (Jwt vs dedicated signer)
   - [x] Ensure short expiry + replay protection where feasible
 
-**Exit criteria:** a client can complete the full WebAuthn registration and login loop. *(Registration and sign-in loops appear to be working in DevServer.)*
+**Exit criteria:** Implemented: ✅. Manually validated: ✅ in DevServer begin/finish loops. Test coverage status: core happy-path behavior covered; broader token/negative-path depth continues in PR 6.
 
 ---
 
@@ -204,20 +220,20 @@ Implementation decisions made:
   - [x] Preserve `state_token` between begin and finish
   - [x] Render server response into `<pre>`
 
-- [ ] Add DevServer UI knobs to exercise different authenticator types
-  - [ ] Registration options: `authenticatorAttachment` (platform/cross-platform)
-  - [ ] Registration options: `residentKey` + `requireResidentKey`
-  - [ ] User verification preference (required/preferred/discouraged)
-  - [ ] Optional attestation conveyance setting
+- [x] Add DevServer UI knobs to exercise different authenticator types
+  - [x] Registration options: `authenticatorAttachment` (platform/cross-platform)
+  - [x] Registration options: `residentKey` + `requireResidentKey`
+  - [x] User verification preference (required/preferred/discouraged)
+  - [x] Optional attestation conveyance setting
 
-- [ ] Add DevServer toggle for discoverable vs identity-required sign-in
-  - [ ] Allow empty identity to test discoverable credentials
-  - [ ] Show which mode is active in the UI/output
+- [x] Add DevServer toggle for discoverable vs identity-required sign-in
+  - [x] Allow empty identity to test discoverable credentials
+  - [x] Show which mode is active in the UI/output
 
-- [ ] Send optional registration/sign-in preferences with begin requests
-  - [ ] Only include when set; keep default behavior otherwise
+- [x] Send optional registration/sign-in preferences with begin requests
+  - [x] Only include when set; keep default behavior otherwise
 
-- [ ] JS logic reference (paste into roadmap for clarity)
+- [x] JS logic reference (paste into roadmap for clarity)
   - base64url helpers:
     ```js
     const b64uToBuf = (b64u) => {
@@ -282,7 +298,7 @@ Implementation decisions made:
   - `http://localhost:4000` is a **secure context exception** for WebAuthn
   - If testing off localhost, add HTTPS support to dev server
 
-**Exit criteria:** developers can register + sign in with passkeys in the dev server UI. *(Registration confirmed; sign-in appears to be working.)*
+**Exit criteria:** Implemented: ✅. Manually validated: ✅ in local DevServer UI. Test coverage status: primarily manual at this layer; supporting automated coverage tracked in PR 6.
 
 ---
 
@@ -295,11 +311,11 @@ Recommended order:
 - [ ] MVP: implement `require_identity? == true`
   - [ ] `sign_in_begin` requires identity
   - [ ] server restricts `allowCredentials` to that user’s credential IDs
-- [ ] Follow-up: implement discoverable (`require_identity? == false`)
-  - [ ] `sign_in_begin` can omit identity
-  - [ ] `sign_in_finish` finds the user from `credential_id`
+- [x] Follow-up: implement discoverable (`require_identity? == false`)
+  - [x] `sign_in_begin` can omit identity
+  - [x] `sign_in_finish` finds the user from `credential_id`
 
-**Exit criteria:** at least one sign-in mode is fully functional and tested.
+**Exit criteria:** Implemented: partial ✅ (discoverable mode done; identity-required mode pending). Manually validated: ✅ for discoverable mode in DevServer. Test coverage status: needs additional mode-specific and negative-path tests in PR 6.
 
 ---
 
@@ -318,7 +334,7 @@ Recommended order:
   - [ ] missing config produces helpful errors
   - [ ] missing attributes/relationship in key_resource is reported
 
-**Exit criteria:** tests cover the happy path and key failure modes.
+**Exit criteria:** Implemented: pending. Manually validated: n/a (test-focused PR). Test coverage status target: state-token semantics, adapter behavior, sign_count/last_used_at updates, and verifier failures.
 
 ---
 
@@ -333,7 +349,7 @@ Recommended order:
   - [ ] suggested frontend tooling (e.g. SimpleWebAuthn)
 - [ ] Ensure the `test/support/example` demonstrates a valid setup
 
-**Exit criteria:** a developer can implement WebAuthn in their app with reasonable effort.
+**Exit criteria:** Implemented: pending. Manually validated: pending doc walkthrough. Test coverage status: n/a (documentation/example PR).
 
 ---
 
@@ -344,4 +360,4 @@ Recommended order:
 - [x] What should the minimal required `key_resource` fields be for our chosen library? → credential_id, public_key, sign_count + user relationship
 - [x] Do we want to auto-generate parts of the key resource (extension transformer) or enforce a contract (verifier-only) for MVP? → Auto-generate + verify (hybrid approach)
 - [ ] What's the default stance on `require_identity?`? → (pending PR 5)
-- [ ] How should state tokens be structured and signed in begin/finish phases?
+- [x] How should state tokens be structured and signed in begin/finish phases? → JWT state token with purpose/challenge/origin/rp_id + short lifetime
