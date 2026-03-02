@@ -47,7 +47,19 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
          :ok <- verify_public_key_attribute(dsl_state),
          :ok <- verify_sign_count_attribute(dsl_state),
          :ok <- verify_user_relationship(dsl_state),
-         :ok <- verify_credential_id_identity(dsl_state) do
+         :ok <- verify_credential_id_identity(dsl_state),
+         :ok <- verify_actions(dsl_state) do
+      :ok
+    end
+  end
+
+  defp verify_actions(dsl_state) do
+    with {:ok, read_action_name} <- Info.web_authn_key_read_action_name(dsl_state),
+         :ok <- verify_action_type(dsl_state, read_action_name, :read),
+         {:ok, destroy_action_name} <- Info.web_authn_key_destroy_action_name(dsl_state),
+         :ok <- verify_action_type(dsl_state, destroy_action_name, :destroy),
+         {:ok, upsert_action_name} <- Info.web_authn_key_upsert_action_name(dsl_state),
+         :ok <- verify_upsert_action(dsl_state, upsert_action_name) do
       :ok
     end
   end
@@ -209,6 +221,104 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
     end
   end
 
+  defp verify_action_type(dsl_state, action_name, expected_type) do
+    with {:ok, action} <- find_action(dsl_state, action_name) do
+      if action.type == expected_type do
+        :ok
+      else
+        {:error,
+         DslError.exception(
+           path: [:web_authn_key, :actions, action_name],
+           message:
+             "Expected action #{inspect(action_name)} to be of type #{inspect(expected_type)}."
+         )}
+      end
+    else
+      {:error, _} ->
+        {:error,
+         DslError.exception(
+           path: [:web_authn_key, :actions, action_name],
+           message: "Required action #{inspect(action_name)} is not defined."
+         )}
+    end
+  end
+
+  defp verify_upsert_action(dsl_state, action_name) do
+    with {:ok, action} <- find_action(dsl_state, action_name),
+         :ok <- verify_upsert_type(action, action_name),
+         :ok <- verify_upsert_enabled(action, action_name),
+         :ok <- verify_upsert_identity(action, action_name),
+         :ok <- verify_upsert_accepts_required_fields(dsl_state, action) do
+      :ok
+    else
+      {:error, _} ->
+        {:error,
+         DslError.exception(
+           path: [:web_authn_key, :actions, action_name],
+           message: "Required upsert action #{inspect(action_name)} is not defined."
+         )}
+
+      {:invalid_upsert_action, message} ->
+        {:error,
+         DslError.exception(
+           path: [:web_authn_key, :actions, action_name],
+           message: message
+         )}
+    end
+  end
+
+  defp verify_upsert_type(action, action_name) do
+    if action.type == :create do
+      :ok
+    else
+      {:invalid_upsert_action,
+       "Expected upsert action #{inspect(action_name)} to be a create action."}
+    end
+  end
+
+  defp verify_upsert_enabled(action, action_name) do
+    if action.upsert? do
+      :ok
+    else
+      {:invalid_upsert_action,
+       "Expected upsert action #{inspect(action_name)} to set upsert? true."}
+    end
+  end
+
+  defp verify_upsert_identity(action, action_name) do
+    if action.upsert_identity == :unique_credential_id do
+      :ok
+    else
+      {:invalid_upsert_action,
+       "Expected upsert action #{inspect(action_name)} to set upsert_identity to :unique_credential_id."}
+    end
+  end
+
+  defp verify_upsert_accepts_required_fields(dsl_state, action) do
+    with {:ok, credential_id_attr} <- Info.web_authn_key_credential_id_attribute_name(dsl_state),
+         {:ok, public_key_attr} <- Info.web_authn_key_public_key_attribute_name(dsl_state),
+         {:ok, sign_count_attr} <- Info.web_authn_key_sign_count_attribute_name(dsl_state),
+         {:ok, user_id_attr} <- Info.web_authn_key_user_id_attribute_name(dsl_state) do
+      required_fields = [credential_id_attr, public_key_attr, sign_count_attr, user_id_attr]
+
+      case action.accept do
+        accept when is_list(accept) ->
+          missing = required_fields -- accept
+
+          if Enum.empty?(missing) do
+            :ok
+          else
+            {:invalid_upsert_action,
+             "Upsert action must accept required fields #{inspect(required_fields)}. Missing: #{inspect(missing)}."}
+          end
+
+        _ ->
+          {:invalid_upsert_action,
+           "Upsert action must define an explicit accept list containing required credential fields."}
+      end
+    end
+  end
+
   defp error_message(field, error) do
     """
     The #{inspect(field)} attribute is not properly configured for WebAuthn support.
@@ -241,6 +351,26 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
 
       identity ->
         {:ok, identity}
+    end
+  end
+
+  defp find_action(dsl_state, action_name) do
+    dsl_state
+    |> Resource.Info.actions()
+    |> Enum.find(&(&1.name == action_name))
+    |> case do
+      nil ->
+        resource = Verifier.get_persisted(dsl_state, :module)
+
+        {:error,
+         DslError.exception(
+           path: [:actions],
+           message:
+             "The resource `#{inspect(resource)}` does not define an action named `#{inspect(action_name)}`"
+         )}
+
+      action ->
+        {:ok, action}
     end
   end
 end

@@ -27,9 +27,11 @@ defmodule Example do
     resource Example.UserWithTotp
     resource Example.UserWithTotpConfirmSetup
     resource Example.UserWithExtraClaims
-    resource Example.UserWithWebAuthn
+    resource Example.UserWithWebAuthnWithDefaults
+    resource Example.UserWithWebAuthnWithRequiredIdentity
     resource Example.UserWithWildcardAndExclusions
-    resource Example.WebAuthnKey
+    resource Example.WebAuthnKeyWithDefaults
+    resource Example.WebAuthnKeyWithRequiredIdentity
   end
 
   json_api do
