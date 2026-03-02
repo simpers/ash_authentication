@@ -24,10 +24,8 @@ defmodule Example do
     resource Example.UserWithExcludedStrategies
     resource Example.UserWithExplicitIncludes
     resource Example.UserWithExtraClaims
-    resource Example.UserWithExtraClaims
     resource Example.UserWithFailingSender
     resource Example.UserWithOtp
-    resource Example.UserWithRecoveryCodes
     resource Example.UserWithRecoveryCodes
     resource Example.UserWithRegisterMagicLink
     resource Example.UserWithRegisterOtp
@@ -37,9 +35,13 @@ defmodule Example do
     resource Example.UserWithTotp
     resource Example.UserWithTotpConfirmSetup
     resource Example.UserWithWebAuthn
+    resource Example.UserWithWebAuthnWithDefaults
+    resource Example.UserWithWebAuthnWithRequiredIdentity
     resource Example.UserWithWildcardAndExclusions
     resource Example.WebAuthnCredential
     resource Example.WebAuthnKey
+    resource Example.WebAuthnKeyWithDefaults
+    resource Example.WebAuthnKeyWithRequiredIdentity
   end
 
   json_api do

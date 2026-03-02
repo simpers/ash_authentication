@@ -56,9 +56,48 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
              public?: false,
              default: 0
            ),
+         {:ok, user_id_attr} <- WebAuthnKey.Info.web_authn_key_user_id_attribute_name(dsl_state),
+         {:ok, dsl_state} <-
+           maybe_build_attribute(dsl_state, user_id_attr, :uuid,
+             allow_nil?: false,
+             writable?: true,
+             public?: false
+           ),
          {:ok, dsl_state} <- maybe_build_optional_attributes(dsl_state),
          {:ok, dsl_state} <- maybe_define_relationship(dsl_state),
-         {:ok, dsl_state} <- maybe_build_unique_identity(dsl_state, credential_id_attr) do
+         {:ok, dsl_state} <- maybe_build_unique_identity(dsl_state, credential_id_attr),
+         {:ok, dsl_state} <-
+           maybe_build_actions(dsl_state, credential_id_attr, public_key_attr, sign_count_attr) do
+      {:ok, dsl_state}
+    end
+  end
+
+  defp maybe_build_actions(dsl_state, credential_id_attr, public_key_attr, sign_count_attr) do
+    with {:ok, user_id_attr} <- WebAuthnKey.Info.web_authn_key_user_id_attribute_name(dsl_state),
+         {:ok, aaguid_attr} <- WebAuthnKey.Info.web_authn_key_aaguid_attribute_name(dsl_state),
+         {:ok, transports_attr} <-
+           WebAuthnKey.Info.web_authn_key_transports_attribute_name(dsl_state),
+         {:ok, last_used_at_attr} <-
+           WebAuthnKey.Info.web_authn_key_last_used_at_attribute_name(dsl_state),
+         {:ok, read_action_name} <- WebAuthnKey.Info.web_authn_key_read_action_name(dsl_state),
+         {:ok, dsl_state} <- maybe_build_read_action(dsl_state, read_action_name),
+         {:ok, destroy_action_name} <-
+           WebAuthnKey.Info.web_authn_key_destroy_action_name(dsl_state),
+         {:ok, dsl_state} <- maybe_build_destroy_action(dsl_state, destroy_action_name),
+         {:ok, upsert_action_name} <-
+           WebAuthnKey.Info.web_authn_key_upsert_action_name(dsl_state),
+         {:ok, dsl_state} <-
+           maybe_build_upsert_action(
+             dsl_state,
+             upsert_action_name,
+             credential_id_attr,
+             public_key_attr,
+             sign_count_attr,
+             user_id_attr,
+             aaguid_attr,
+             transports_attr,
+             last_used_at_attr
+           ) do
       {:ok, dsl_state}
     end
   end
@@ -140,9 +179,11 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
             Transformer.build_entity(Resource.Dsl, [:relationships], :belongs_to,
               name: relationship_name,
               destination: user_resource,
-              attribute: user_id_attr,
+              source_attribute: user_id_attr,
+              define_attribute?: true,
+              attribute_writable?: true,
               primary_key?: false,
-              allow_nil?: false
+              allow_nil?: true
             )
 
           {:ok, Transformer.add_entity(dsl_state, [:relationships], relationship)}
@@ -175,6 +216,86 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
     end
   end
 
+  defp maybe_build_read_action(dsl_state, action_name) do
+    case get_action(dsl_state, action_name) do
+      {:ok, _} ->
+        {:ok, dsl_state}
+
+      _ ->
+        {:ok, action} =
+          Transformer.build_entity(Resource.Dsl, [:actions], :read, name: action_name)
+
+        {:ok, Transformer.add_entity(dsl_state, [:actions], action)}
+    end
+  end
+
+  defp maybe_build_destroy_action(dsl_state, action_name) do
+    case get_action(dsl_state, action_name) do
+      {:ok, _} ->
+        {:ok, dsl_state}
+
+      _ ->
+        {:ok, action} =
+          Transformer.build_entity(Resource.Dsl, [:actions], :destroy,
+            name: action_name,
+            accept: []
+          )
+
+        {:ok, Transformer.add_entity(dsl_state, [:actions], action)}
+    end
+  end
+
+  defp maybe_build_upsert_action(
+         dsl_state,
+         action_name,
+         credential_id_attr,
+         public_key_attr,
+         sign_count_attr,
+         user_id_attr,
+         aaguid_attr,
+         transports_attr,
+         last_used_at_attr
+       ) do
+    case get_action(dsl_state, action_name) do
+      {:ok, _} ->
+        {:ok, dsl_state}
+
+      _ ->
+        accept =
+          [
+            credential_id_attr,
+            public_key_attr,
+            sign_count_attr,
+            user_id_attr,
+            aaguid_attr,
+            transports_attr,
+            last_used_at_attr
+          ]
+          |> maybe_add_name_to_accept(dsl_state)
+
+        {:ok, action} =
+          Transformer.build_entity(Resource.Dsl, [:actions], :create,
+            name: action_name,
+            primary?: true,
+            upsert?: true,
+            upsert_identity: :unique_credential_id,
+            accept: accept
+          )
+
+        {:ok, Transformer.add_entity(dsl_state, [:actions], action)}
+    end
+  end
+
+  defp maybe_add_name_to_accept(accept, dsl_state) do
+    case find_attribute(dsl_state, :name) do
+      {:ok, _} ->
+        [:name | accept]
+
+      _ ->
+        accept
+    end
+  end
+
   defp get_relationship(dsl_state, name) do
     dsl_state
     |> Transformer.get_entities([:relationships])
@@ -192,6 +313,16 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
     |> case do
       nil -> :error
       identity -> {:ok, identity}
+    end
+  end
+
+  defp get_action(dsl_state, name) do
+    dsl_state
+    |> Transformer.get_entities([:actions])
+    |> Enum.find(fn action -> action.name == name end)
+    |> case do
+      nil -> :error
+      action -> {:ok, action}
     end
   end
 end
