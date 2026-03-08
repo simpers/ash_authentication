@@ -41,6 +41,11 @@ defmodule AshAuthentication.Strategy.WebAuthn.Dsl do
       type: :atom,
       doc: "The user resource that the strategy is targeting."
     ],
+    register_action_name: [
+      type: :atom,
+      doc:
+        "The name to use for creating users during registration. Defaults to `register_with_<strategy_name>`."
+    ],
     register_begin_action_name: [
       type: :atom,
       doc:

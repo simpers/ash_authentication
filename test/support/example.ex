@@ -36,11 +36,13 @@ defmodule Example do
     resource Example.UserWithTotpConfirmSetup
     resource Example.UserWithWebAuthn
     resource Example.UserWithWebAuthnWithDefaults
+    resource Example.UserWithWebAuthnWithoutPrimaryCreate
     resource Example.UserWithWebAuthnWithRequiredIdentity
     resource Example.UserWithWildcardAndExclusions
     resource Example.WebAuthnCredential
     resource Example.WebAuthnKey
     resource Example.WebAuthnKeyWithDefaults
+    resource Example.WebAuthnKeyWithoutPrimaryCreate
     resource Example.WebAuthnKeyWithRequiredIdentity
   end
 
