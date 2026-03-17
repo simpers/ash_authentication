@@ -13,6 +13,11 @@
 - [x] Basic scaffolding exists in `AshAuthentication.Strategy.WebAuthn` (DSL, strategy protocol impl, plug module)
 - [x] A `WebAuthnKey` Spark extension exists (placeholder)
 - [x] Example wiring exists in `test/support/example/*` (user + key resource)
+- [x] Begin/finish context resolution is split correctly (`begin` resolves from config/request, `finish` reads state-token claims)
+- [x] Runtime Wax challenge construction for finish verification is fixed (no `origin_verify_fun` nil crash)
+- [x] Registration finish input sanitization is fixed (WebAuthn-only params not forwarded to user create)
+- [x] `public_key` can use `AshAuthentication.Type.CoseKey` (transformer/verifier/example aligned)
+- [x] DevServer registration flow now completes end-to-end (`register_begin` + `register_finish`)
 
 ### Known gaps / issues to address early
 
@@ -28,7 +33,7 @@
 
 - [x] Defined `WebAuthnKey` resource contract with required attributes:
   - [x] `credential_id` (binary, unique)
-  - [x] `public_key` (binary)
+  - [x] `public_key` (binary storage, supports `AshAuthentication.Type.CoseKey`)
   - [x] `sign_count` (integer)
 - [x] Added relationship to user (`belongs_to`)
 - [x] Created `WebAuthnKey.Info` module for DSL introspection
@@ -76,8 +81,8 @@ WebAuthn is inherently multi-step. MVP should use **begin/finish phases**.
 
 Notes:
 
-- [ ] “Begin” endpoints return `PublicKeyCredential*Options` plus a signed state token.
-- [ ] “Finish” endpoints verify the client response using the signed state token and return `{:ok, user}`.
+- [x] “Begin” endpoints return `PublicKeyCredential*Options` plus a signed state token.
+- [x] “Finish” endpoints verify the client response using the signed state token and return `{:ok, user}`.
 
 ---
 
@@ -126,7 +131,7 @@ Notes:
 Minimum required fields:
 
 - [x] `credential_id` (binary) unique
-- [x] `public_key` (binary; COSE or library-defined)
+- [x] `public_key` (binary storage; `AshAuthentication.Type.CoseKey` supported)
 - [x] `sign_count` (integer)
 - [x] Relationship to user (`belongs_to :user, …`) and a usable foreign key
 
@@ -156,20 +161,127 @@ Implementation decisions made:
 
 **Goal:** deliver a functional HTTP + action interface.
 
-- [ ] Implement strategy phases/actions:
-  - [ ] `register_begin`
-  - [ ] `register_finish`
-  - [ ] `sign_in_begin`
-  - [ ] `sign_in_finish`
-- [ ] Implement plug handlers for each phase (patterned after Password)
-- [ ] Decide the request/response shapes:
-  - [ ] begin returns: options + signed `state`
-  - [ ] finish accepts: client credential + `state`
-- [ ] Implement the signed state token format (must include at least challenge + expiry)
-  - [ ] Decide where signing happens (Jwt vs dedicated signer)
-  - [ ] Ensure short expiry + replay protection where feasible
+- [x] Implement strategy phases/actions:
+  - [x] `register_begin`
+  - [x] `register_finish`
+  - [x] `sign_in_begin`
+  - [x] `sign_in_finish`
+- [x] Implement plug handlers for each phase (patterned after Password)
+- [x] Decide the request/response shapes:
+  - [x] begin returns: options + signed `state`
+  - [x] finish accepts: client credential + `state`
+- [x] Implement the signed state token format (must include at least challenge + expiry)
+  - [x] Decide where signing happens (Jwt vs dedicated signer)
+  - [x] Ensure short expiry + replay protection where feasible
 
-**Exit criteria:** a client can complete the full WebAuthn registration and login loop.
+**Exit criteria:** a client can complete the full WebAuthn registration and login loop. *(Registration loop is now working; sign-in loop still in progress.)*
+
+---
+
+### PR 4.5 — Dev server WebAuthn test harness (local development)
+
+**Goal:** enable end-to-end WebAuthn testing in dev without external tooling.
+
+- [x] Add a WebAuthn section to `dev/dev_server/test_page.ex` render output when `:web_authn` is present:
+  - [x] Identity input (email/username)
+  - [x] Optional display name input (for registration)
+  - [x] Buttons: “Register passkey”, “Sign in with passkey”
+  - [x] Output `<pre>` to show JSON success/error
+  - [x] Embed begin/finish URLs as `data-*` attributes on the section
+    - [x] `data-register-begin`, `data-register-finish`
+    - [x] `data-signin-begin`, `data-signin-finish`
+
+- [x] Add WebAuthn JS to `dev/dev_server/test_page.html.eex`
+  - [x] Insert `<script>` just before `</body>`
+  - [x] Provide helpers:
+    - [x] base64url encode/decode for ArrayBuffers
+    - [x] convert JSON → `PublicKeyCredentialOptions` (challenge/user.id/allowCredentials.id)
+    - [x] convert `PublicKeyCredential` → JSON payload
+  - [x] Fetch flow (JSON):
+    - [x] `register_begin` → `navigator.credentials.create` → `register_finish`
+    - [x] `sign_in_begin` → `navigator.credentials.get` → `sign_in_finish`
+  - [x] Preserve `state_token` between begin and finish
+  - [x] Render server response into `<pre>`
+
+- [ ] Add DevServer UI knobs to exercise different authenticator types
+  - [ ] Registration options: `authenticatorAttachment` (platform/cross-platform)
+  - [ ] Registration options: `residentKey` + `requireResidentKey`
+  - [ ] User verification preference (required/preferred/discouraged)
+  - [ ] Optional attestation conveyance setting
+
+- [ ] Add DevServer toggle for discoverable vs identity-required sign-in
+  - [ ] Allow empty identity to test discoverable credentials
+  - [ ] Show which mode is active in the UI/output
+
+- [ ] Send optional registration/sign-in preferences with begin requests
+  - [ ] Only include when set; keep default behavior otherwise
+
+- [ ] JS logic reference (paste into roadmap for clarity)
+  - base64url helpers:
+    ```js
+    const b64uToBuf = (b64u) => {
+      const pad = "=".repeat((4 - (b64u.length % 4)) % 4);
+      const base64 = (b64u + pad).replace(/-/g, "+").replace(/_/g, "/");
+      const bin = atob(base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes.buffer;
+    };
+
+    const bufToB64u = (buf) => {
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      for (const b of bytes) bin += String.fromCharCode(b);
+      return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    };
+    ```
+  - credential conversion:
+    ```js
+    const publicKeyFromJSON = (opts) => {
+      const pk = { ...opts };
+      pk.challenge = b64uToBuf(pk.challenge);
+      if (pk.user?.id) pk.user.id = b64uToBuf(pk.user.id);
+      if (pk.excludeCredentials) {
+        pk.excludeCredentials = pk.excludeCredentials.map((c) => ({ ...c, id: b64uToBuf(c.id) }));
+      }
+      if (pk.allowCredentials) {
+        pk.allowCredentials = pk.allowCredentials.map((c) => ({ ...c, id: b64uToBuf(c.id) }));
+      }
+      return pk;
+    };
+
+    const credentialToJSON = (cred) => ({
+      id: cred.id,
+      rawId: bufToB64u(cred.rawId),
+      type: cred.type,
+      response: {
+        clientDataJSON: bufToB64u(cred.response.clientDataJSON),
+        attestationObject: cred.response.attestationObject && bufToB64u(cred.response.attestationObject),
+        authenticatorData: cred.response.authenticatorData && bufToB64u(cred.response.authenticatorData),
+        signature: cred.response.signature && bufToB64u(cred.response.signature),
+        userHandle: cred.response.userHandle && bufToB64u(cred.response.userHandle)
+      }
+    });
+    ```
+  - fetch flow:
+    ```js
+    const postJSON = async (url, payload) => {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw json;
+      return json;
+    };
+    ```
+
+- [x] Dev-server note
+  - `http://localhost:4000` is a **secure context exception** for WebAuthn
+  - If testing off localhost, add HTTPS support to dev server
+
+**Exit criteria:** developers can register + sign in with passkeys in the dev server UI. *(Registration confirmed; sign-in pending.)*
 
 ---
 
@@ -198,8 +310,8 @@ Recommended order:
   - [ ] state token signing/expiry validation
   - [ ] adapter wrapper behavior (mocked)
 - [ ] Strategy tests:
-  - [ ] begin returns options + state
-  - [ ] finish persists key and returns user
+  - [x] begin returns options + state
+  - [x] finish persists key and returns user
   - [ ] sign_in_finish updates sign_count and/or last_used_at
 - [ ] DSL verifier tests:
   - [ ] missing config produces helpful errors
@@ -226,10 +338,8 @@ Recommended order:
 
 ## Open Questions / Decisions (track here)
 
-## Open Questions / Decisions (track here)
-
 - [x] Which underlying WebAuthn library will we use? → `wax_`
-- [ ] How will we sign and validate the begin/finish "state" token? → (pending PR 4)
+- [x] How will we sign and validate the begin/finish "state" token? → JWT-based state token claims are implemented in begin/finish actions
 - [x] What should the minimal required `key_resource` fields be for our chosen library? → credential_id, public_key, sign_count + user relationship
 - [x] Do we want to auto-generate parts of the key resource (extension transformer) or enforce a contract (verifier-only) for MVP? → Auto-generate + verify (hybrid approach)
 - [ ] What's the default stance on `require_identity?`? → (pending PR 5)
