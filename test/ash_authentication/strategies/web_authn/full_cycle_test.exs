@@ -113,17 +113,21 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
     attestation_object = <<10, 11, 12>>
     client_data_json = <<13, 14, 15>>
     email = "user_#{System.unique_integer([:positive])}@example.com"
+    credential_name = "Work Laptop"
 
     params = %{
       to_string(subject_name) => %{
         "webauthn_options" => %{
           "rp_id" => @rp_id
         },
-        "credential" => %{
-          "response" => %{
-            "attestationObject" => base64url(attestation_object),
-            "clientDataJSON" => base64url(client_data_json)
-          }
+        "web_authn_key" => %{
+          "credential" => %{
+            "response" => %{
+              "attestationObject" => base64url(attestation_object),
+              "clientDataJSON" => base64url(client_data_json)
+            }
+          },
+          "name" => credential_name
         },
         "state_token" => state_token,
         "email" => email
@@ -139,6 +143,63 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
     assert {:ok, user} = conn.private.authentication_result
     assert to_string(user.email) == email
     assert user.__metadata__.token
+
+    assert {:ok, keys} =
+             Example.WebAuthnKeyWithDefaults
+             |> Ash.Query.for_read(:read)
+             |> Ash.read(authorize?: false)
+
+    assert Enum.any?(keys, &(&1.user_id == user.id and &1.name == credential_name))
+  end
+
+  test "register_finish works without a primary create action" do
+    strategy =
+      Info.strategy!(Example.UserWithWebAuthnWithoutPrimaryCreate, :web_authn)
+      |> Map.put(:origin, nil)
+
+    subject_name = Info.authentication_subject_name!(strategy.resource)
+    state_token = register_begin_state_token(strategy, subject_name)
+
+    attestation_object = <<10, 11, 12>>
+    client_data_json = <<13, 14, 15>>
+    email = "user_#{System.unique_integer([:positive])}@example.com"
+    credential_name = "Phone"
+
+    register_params = %{
+      to_string(subject_name) => %{
+        "webauthn_options" => %{"rp_id" => @rp_id},
+        "web_authn_key" => %{
+          "credential" => %{
+            "response" => %{
+              "attestationObject" => base64url(attestation_object),
+              "clientDataJSON" => base64url(client_data_json)
+            }
+          },
+          "name" => credential_name
+        },
+        "state_token" => state_token,
+        "email" => email
+      }
+    }
+
+    register_conn =
+      :post
+      |> conn("/auth", register_params)
+      |> Ash.PlugHelpers.set_context(http_request_context())
+      |> WebAuthnPlug.register_finish(strategy)
+
+    assert {:ok, user} = register_conn.private.authentication_result
+    assert user.__metadata__.token
+
+    assert {:ok, keys} =
+             Example.WebAuthnKeyWithoutPrimaryCreate
+             |> Ash.Query.for_read(:read)
+             |> Ash.read(authorize?: false)
+
+    assert Enum.any?(keys, fn key ->
+             key.user_id == user.id and key.credential_id == <<5, 6, 7>> and
+               key.name == credential_name
+           end)
   end
 
   defp register_begin_state_token(strategy, subject_name) do

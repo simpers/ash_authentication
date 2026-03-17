@@ -67,6 +67,7 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
     test "sets default action names based on strategy name" do
       strategy = Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)
 
+      assert strategy.register_action_name == :register_with_web_authn
       assert strategy.register_begin_action_name == :register_begin_with_web_authn
       assert strategy.register_finish_action_name == :register_finish_with_web_authn
       assert strategy.sign_in_begin_action_name == :sign_in_begin_with_web_authn
@@ -114,6 +115,34 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
     test "sign_in_finish returns authentication failure without params", %{strategy: strategy} do
       assert {:error, %AshAuthentication.Errors.AuthenticationFailed{}} =
                Strategy.action(strategy, :sign_in_finish, %{}, [])
+    end
+
+    test "register action applies authentication context for policy bypass" do
+      strategy = Info.strategy!(Example.UserWithWebAuthnWithoutPrimaryCreate, :web_authn)
+      email = "user_#{System.unique_integer([:positive])}@example.com"
+      credential_id = <<1, 2, 3>>
+
+      assert {:ok, user} =
+               strategy.resource
+               |> Ash.Changeset.new()
+               |> Ash.Changeset.for_create(strategy.register_action_name, %{
+                 email: email,
+                 web_authn_key: %{
+                   credential_id: credential_id,
+                   public_key: %{1 => 2, 3 => -7, -1 => 1, -2 => <<8, 9>>, -3 => <<10, 11>>},
+                   sign_count: 0
+                 }
+               })
+               |> Ash.create()
+
+      assert to_string(user.email) == email
+
+      assert {:ok, keys} =
+               Example.WebAuthnKeyWithoutPrimaryCreate
+               |> Ash.Query.for_read(:read)
+               |> Ash.read(authorize?: false)
+
+      assert Enum.any?(keys, &(&1.user_id == user.id and &1.credential_id == credential_id))
     end
   end
 end

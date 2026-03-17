@@ -35,6 +35,10 @@ defmodule AshAuthentication.WebAuthnKeyTest do
     assert read_action
     assert read_action.type == :read
 
+    primary_read_action = Info.primary_action(resource, :read)
+    assert primary_read_action
+    assert primary_read_action.name == :read
+
     destroy_action = Info.action(resource, :destroy)
     assert destroy_action
     assert destroy_action.type == :destroy
