@@ -52,7 +52,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
   end
 
   setup do
-    strategy = Info.strategy!(Example.UserWithWebAuthn, :web_authn)
+    strategy = Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)
     strategy = %{strategy | origin: nil}
     subject_name = Info.authentication_subject_name!(strategy.resource)
     previous_adapter = Application.get_env(:ash_authentication, :web_authn_adapter)
