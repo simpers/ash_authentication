@@ -260,6 +260,7 @@ defmodule AshAuthentication.MixProject do
       {:plug_cowboy, "~> 2.5", only: [:dev, :test]},
       {:simple_sat, "~> 0.1", only: [:dev, :test]},
       {:sobelow, "~> 0.12", only: [:dev, :test]},
+      {:tidewave, "~> 0.5.4", only: [:dev]},
       {:usage_rules, "~> 0.1", only: [:dev]}
     ]
   end
