@@ -31,13 +31,13 @@ defmodule AshAuthentication.Strategy.WebAuthn.StrategyTest do
 
   describe "Strategy.routes/1" do
     test "it returns routes for all four phases" do
-      assert {:ok, strategy} = Info.strategy(Example.User, :web_authn)
+      assert {:ok, strategy} = Info.strategy(Example.UserWithWebAuthn, :web_authn)
 
       assert Strategy.routes(strategy) == [
-               {"/user/web_authn/register_begin", :register_begin},
-               {"/user/web_authn/register_finish", :register_finish},
-               {"/user/web_authn/sign_in_begin", :sign_in_begin},
-               {"/user/web_authn/sign_in_finish", :sign_in_finish}
+               {"/user_with_web_authn/web_authn/register_begin", :register_begin},
+               {"/user_with_web_authn/web_authn/register_finish", :register_finish},
+               {"/user_with_web_authn/web_authn/sign_in_begin", :sign_in_begin},
+               {"/user_with_web_authn/web_authn/sign_in_finish", :sign_in_finish}
              ]
     end
   end
