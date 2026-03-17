@@ -18,6 +18,7 @@
 - [x] Registration finish input sanitization is fixed (WebAuthn-only params not forwarded to user create)
 - [x] `public_key` can use `AshAuthentication.Type.CoseKey` (transformer/verifier/example aligned)
 - [x] DevServer registration flow now completes end-to-end (`register_begin` + `register_finish`)
+- [x] DevServer sign-in flow appears to complete end-to-end after adapter/authentication fixes (`sign_in_begin` + `sign_in_finish`)
 
 ### Known gaps / issues to address early
 
@@ -51,7 +52,7 @@
 The MVP should allow:
 
 - [ ] **Register a credential** for an *existing* user (user already created via password/OAuth/etc.)
-- [ ] **Sign in** using WebAuthn and receive the same authentication result semantics as other strategies (token in metadata when enabled, etc.)
+- [x] **Sign in** using WebAuthn and receive the same authentication result semantics as other strategies (token in metadata when enabled, etc.) *(validated in DevServer flow; keep hardening with additional tests)*
 - [ ] **Persist** credential material in a `key_resource` and use it to authenticate later
 - [ ] Core security validation:
   - [ ] challenge binding
@@ -174,7 +175,7 @@ Implementation decisions made:
   - [x] Decide where signing happens (Jwt vs dedicated signer)
   - [x] Ensure short expiry + replay protection where feasible
 
-**Exit criteria:** a client can complete the full WebAuthn registration and login loop. *(Registration loop is now working; sign-in loop still in progress.)*
+**Exit criteria:** a client can complete the full WebAuthn registration and login loop. *(Registration and sign-in loops appear to be working in DevServer.)*
 
 ---
 
@@ -281,7 +282,7 @@ Implementation decisions made:
   - `http://localhost:4000` is a **secure context exception** for WebAuthn
   - If testing off localhost, add HTTPS support to dev server
 
-**Exit criteria:** developers can register + sign in with passkeys in the dev server UI. *(Registration confirmed; sign-in pending.)*
+**Exit criteria:** developers can register + sign in with passkeys in the dev server UI. *(Registration confirmed; sign-in appears to be working.)*
 
 ---
 
