@@ -57,8 +57,9 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
              default: 0
            ),
          {:ok, user_id_attr} <- WebAuthnKey.Info.web_authn_key_user_id_attribute_name(dsl_state),
+         {:ok, user_id_type} <- WebAuthnKey.Info.web_authn_key_user_id_type(dsl_state),
          {:ok, dsl_state} <-
-           maybe_build_attribute(dsl_state, user_id_attr, :uuid,
+           maybe_build_attribute(dsl_state, user_id_attr, user_id_type,
              allow_nil?: false,
              writable?: true,
              public?: false
@@ -175,6 +176,8 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
           {:ok, dsl_state}
 
         _ ->
+          source = Transformer.get_persisted(dsl_state, :module)
+
           {:ok, relationship} =
             Transformer.build_entity(Resource.Dsl, [:relationships], :belongs_to,
               name: relationship_name,
@@ -186,7 +189,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
               allow_nil?: true
             )
 
-          {:ok, Transformer.add_entity(dsl_state, [:relationships], relationship)}
+          {:ok, Transformer.add_entity(dsl_state, [:relationships], %{relationship | source: source})}
       end
     else
       nil ->
@@ -351,4 +354,5 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
       action -> {:ok, action}
     end
   end
+
 end
