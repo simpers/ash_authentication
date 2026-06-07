@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn.TransformerTest do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers.TransformerTest do
   @moduledoc false
   use ExUnit.Case, async: true
 
@@ -15,7 +15,8 @@ defmodule AshAuthentication.Strategy.WebAuthn.TransformerTest do
 
   describe "default action names" do
     test "it sets all four begin/finish action names" do
-      assert {:ok, strategy} = Info.strategy(Example.UserWithWebAuthnWithDefaults, :web_authn)
+      assert {:ok, strategy} =
+               Info.strategy(Example.UserWithWebAuthnSimpersWithDefaults, :web_authn)
 
       assert strategy.register_action_name == :register_with_web_authn
       assert strategy.register_begin_action_name == :register_begin_with_web_authn
@@ -25,7 +26,8 @@ defmodule AshAuthentication.Strategy.WebAuthn.TransformerTest do
     end
 
     test "it ensures register action includes authentication context change" do
-      assert {:ok, strategy} = Info.strategy(Example.UserWithWebAuthnWithDefaults, :web_authn)
+      assert {:ok, strategy} =
+               Info.strategy(Example.UserWithWebAuthnSimpersWithDefaults, :web_authn)
 
       assert %{name: action_name} =
                action =

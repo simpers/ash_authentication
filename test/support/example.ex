@@ -35,15 +35,14 @@ defmodule Example do
     resource Example.UserWithTotp
     resource Example.UserWithTotpConfirmSetup
     resource Example.UserWithWebAuthn
-    resource Example.UserWithWebAuthnWithDefaults
-    resource Example.UserWithWebAuthnWithoutPrimaryCreate
-    resource Example.UserWithWebAuthnWithRequiredIdentity
+    resource Example.UserWithWebAuthnSimpersWithDefaults
+    resource Example.UserWithWebAuthnSimpersWithoutPrimaryCreate
+    resource Example.UserWithWebAuthnSimpersWithRequiredIdentity
     resource Example.UserWithWildcardAndExclusions
     resource Example.WebAuthnCredential
-    resource Example.WebAuthnKey
-    resource Example.WebAuthnKeyWithDefaults
-    resource Example.WebAuthnKeyWithoutPrimaryCreate
-    resource Example.WebAuthnKeyWithRequiredIdentity
+    resource Example.WebAuthnSimpersKeyWithDefaults
+    resource Example.WebAuthnSimpersKeyWithoutPrimaryCreate
+    resource Example.WebAuthnSimpersKeyWithRequiredIdentity
   end
 
   json_api do

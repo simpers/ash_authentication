@@ -2,16 +2,16 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule Example.WebAuthnKeyWithRequiredIdentity do
+defmodule Example.WebAuthnSimpersKeyWithDefaults do
   @moduledoc false
 
   use Ash.Resource,
     domain: Example,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshAuthentication.WebAuthnKey]
+    extensions: [AshAuthentication.WebAuthnSimpersKey]
 
   web_authn_key do
-    user_resource Example.UserWithWebAuthnWithRequiredIdentity
+    user_resource Example.UserWithWebAuthnSimpersWithDefaults
   end
 
   attributes do

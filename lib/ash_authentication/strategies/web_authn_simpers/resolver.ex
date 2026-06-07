@@ -2,15 +2,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn.Resolver do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers.Resolver do
   @moduledoc false
 
   import AshAuthentication.Plug.Helpers, only: [origin_from_http_request: 1]
-  import AshAuthentication.WebAuthn.Utils
+  import AshAuthentication.WebAuthnSimpers.Utils
 
-  alias AshAuthentication.Strategy.WebAuthn
+  alias AshAuthentication.Strategy.WebAuthnSimpers
 
-  @spec resolve_origin_for_begin(WebAuthn.t(), map(), map()) ::
+  @spec resolve_origin_for_begin(WebAuthnSimpers.t(), map(), map()) ::
           {:ok, String.t()} | {:error, String.t()}
   def resolve_origin_for_begin(strategy, webauthn_options, context) do
     # Begin phase resolves values from configuration/request context.
@@ -23,7 +23,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Resolver do
     require_binary(origin, "Missing WebAuthn origin")
   end
 
-  @spec resolve_rp_id_for_begin(WebAuthn.t(), map(), map()) ::
+  @spec resolve_rp_id_for_begin(WebAuthnSimpers.t(), map(), map()) ::
           {:ok, String.t()} | {:error, String.t()}
   def resolve_rp_id_for_begin(strategy, webauthn_options, context) do
     rp_id =

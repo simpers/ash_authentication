@@ -1,7 +1,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers.FullCycleTest do
   use DataCase, async: false
 
   @moduletag feature: :webauthn
@@ -9,7 +9,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
   import Plug.Test
 
   alias AshAuthentication.{Info, Jwt}
-  alias AshAuthentication.Strategy.WebAuthn.Plug, as: WebAuthnPlug
+  alias AshAuthentication.Strategy.WebAuthnSimpers.Plug, as: WebAuthnPlug
 
   @origin "https://example.com"
   @rp_id "example.com"
@@ -52,7 +52,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
   end
 
   setup do
-    strategy = Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)
+    strategy = Info.strategy!(Example.UserWithWebAuthnSimpersWithDefaults, :web_authn)
     strategy = %{strategy | origin: nil}
     subject_name = Info.authentication_subject_name!(strategy.resource)
     previous_adapter = Application.get_env(:ash_authentication, :web_authn_adapter)
@@ -145,7 +145,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
     assert user.__metadata__.token
 
     assert {:ok, keys} =
-             Example.WebAuthnKeyWithDefaults
+             Example.WebAuthnSimpersKeyWithDefaults
              |> Ash.Query.for_read(:read)
              |> Ash.read(authorize?: false)
 
@@ -154,7 +154,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
 
   test "register_finish works without a primary create action" do
     strategy =
-      Info.strategy!(Example.UserWithWebAuthnWithoutPrimaryCreate, :web_authn)
+      Info.strategy!(Example.UserWithWebAuthnSimpersWithoutPrimaryCreate, :web_authn)
       |> Map.put(:origin, nil)
 
     subject_name = Info.authentication_subject_name!(strategy.resource)
@@ -192,7 +192,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.FullCycleTest do
     assert user.__metadata__.token
 
     assert {:ok, keys} =
-             Example.WebAuthnKeyWithoutPrimaryCreate
+             Example.WebAuthnSimpersKeyWithoutPrimaryCreate
              |> Ash.Query.for_read(:read)
              |> Ash.read(authorize?: false)
 

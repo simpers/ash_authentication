@@ -37,7 +37,7 @@ defmodule DevServer.TestPage do
     resources =
       :ash_authentication
       |> AshAuthentication.authenticated_resources()
-      |> Enum.filter(&(&1 == Example.UserWithWebAuthnWithDefaults))
+      |> Enum.filter(&(&1 == Example.UserWithWebAuthnSimpersWithDefaults))
       |> Enum.map(
         &{&1, Info.authentication_options(&1),
          Info.authentication_strategies(&1) ++ Info.authentication_add_ons(&1)}

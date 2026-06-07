@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthnTest do
+defmodule AshAuthentication.Strategy.WebAuthnSimpersTest do
   @moduledoc false
   use DataCase, async: true
 
@@ -12,7 +12,7 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
 
   describe "strategy protocol" do
     setup do
-      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)}
+      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthnSimpersWithDefaults, :web_authn)}
     end
 
     test "name/1 returns the strategy name", %{strategy: strategy} do
@@ -42,13 +42,17 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
 
       assert length(routes) == 4
 
-      assert {"/user_with_web_authn_with_defaults/web_authn/register_begin", :register_begin} in routes
+      assert {"/user_with_web_authn_simpers_with_defaults/web_authn/register_begin",
+              :register_begin} in routes
 
-      assert {"/user_with_web_authn_with_defaults/web_authn/register_finish", :register_finish} in routes
+      assert {"/user_with_web_authn_simpers_with_defaults/web_authn/register_finish",
+              :register_finish} in routes
 
-      assert {"/user_with_web_authn_with_defaults/web_authn/sign_in_begin", :sign_in_begin} in routes
+      assert {"/user_with_web_authn_simpers_with_defaults/web_authn/sign_in_begin",
+              :sign_in_begin} in routes
 
-      assert {"/user_with_web_authn_with_defaults/web_authn/sign_in_finish", :sign_in_finish} in routes
+      assert {"/user_with_web_authn_simpers_with_defaults/web_authn/sign_in_finish",
+              :sign_in_finish} in routes
     end
 
     test "method_for_phase/2 returns :post for all phases", %{strategy: strategy} do
@@ -65,7 +69,7 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
 
   describe "transformer" do
     test "sets default action names based on strategy name" do
-      strategy = Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)
+      strategy = Info.strategy!(Example.UserWithWebAuthnSimpersWithDefaults, :web_authn)
 
       assert strategy.register_action_name == :register_with_web_authn
       assert strategy.register_begin_action_name == :register_begin_with_web_authn
@@ -75,26 +79,26 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
     end
 
     test "strategy has correct configuration from DSL" do
-      strategy = Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)
+      strategy = Info.strategy!(Example.UserWithWebAuthnSimpersWithDefaults, :web_authn)
 
-      assert strategy.key_resource == Example.WebAuthnKeyWithDefaults
-      assert strategy.relying_party == {Example.UserWithWebAuthnWithDefaults.Secret, []}
+      assert strategy.key_resource == Example.WebAuthnSimpersKeyWithDefaults
+      assert strategy.relying_party == {Example.UserWithWebAuthnSimpersWithDefaults.Secret, []}
       assert strategy.require_identity? == false
-      assert strategy.resource == Example.UserWithWebAuthnWithDefaults
+      assert strategy.resource == Example.UserWithWebAuthnSimpersWithDefaults
     end
 
     test "required identity fixture overrides require_identity?" do
-      strategy = Info.strategy!(Example.UserWithWebAuthnWithRequiredIdentity, :web_authn)
+      strategy = Info.strategy!(Example.UserWithWebAuthnSimpersWithRequiredIdentity, :web_authn)
 
-      assert strategy.key_resource == Example.WebAuthnKeyWithRequiredIdentity
+      assert strategy.key_resource == Example.WebAuthnSimpersKeyWithRequiredIdentity
       assert strategy.require_identity? == true
-      assert strategy.resource == Example.UserWithWebAuthnWithRequiredIdentity
+      assert strategy.resource == Example.UserWithWebAuthnSimpersWithRequiredIdentity
     end
   end
 
   describe "actions" do
     setup do
-      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)}
+      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthnSimpersWithDefaults, :web_authn)}
     end
 
     test "register_begin returns authentication failure without origin", %{strategy: strategy} do
@@ -118,7 +122,7 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
     end
 
     test "register action applies authentication context for policy bypass" do
-      strategy = Info.strategy!(Example.UserWithWebAuthnWithoutPrimaryCreate, :web_authn)
+      strategy = Info.strategy!(Example.UserWithWebAuthnSimpersWithoutPrimaryCreate, :web_authn)
       email = "user_#{System.unique_integer([:positive])}@example.com"
       credential_id = <<1, 2, 3>>
 
@@ -138,7 +142,7 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
       assert to_string(user.email) == email
 
       assert {:ok, keys} =
-               Example.WebAuthnKeyWithoutPrimaryCreate
+               Example.WebAuthnSimpersKeyWithoutPrimaryCreate
                |> Ash.Query.for_read(:read)
                |> Ash.read(authorize?: false)
 

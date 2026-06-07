@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthn.Utils do
+defmodule AshAuthentication.WebAuthnSimpers.Utils do
   @moduledoc false
 
   import AshAuthentication.Strategy.Utils,
