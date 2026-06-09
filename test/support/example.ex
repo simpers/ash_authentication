@@ -11,6 +11,7 @@ defmodule Example do
     resource Example.AuditLog
     resource Example.AuditLogNoExpiry
     resource Example.OidcConnection
+    resource Example.RecoveryCode
     resource Example.Token
     resource Example.TokenWithCustomCreateTimestamp
     resource Example.User
@@ -19,24 +20,28 @@ defmodule Example do
     resource Example.UserWithEmptyIncludes
     resource Example.UserWithExcludedActions
     resource Example.UserWithExcludedStrategies
-    resource Example.UserWithOtp
-    resource Example.UserWithRegisterOtp
     resource Example.UserWithExplicitIncludes
+    resource Example.UserWithExtraClaims
     resource Example.UserWithFailingSender
+    resource Example.UserWithOtp
+    resource Example.UserWithRecoveryCodes
     resource Example.UserWithRegisterMagicLink
+    resource Example.UserWithRegisterOtp
     resource Example.UserWithRememberMe
     resource Example.UserWithSelectiveStrategyIncludes
     resource Example.UserWithTokenRequired
     resource Example.UserWithTotp
     resource Example.UserWithTotpConfirmSetup
     resource Example.UserWithWildcardAndExclusions
-    resource Example.UserWithExtraClaims
-    resource Example.RecoveryCode
-    resource Example.UserWithRecoveryCodes
+
     resource Example.UserWithWebAuthn
+
     resource Example.WebAuthnCredential
     resource Example.MultiTenantUserWithWebAuthn
     resource Example.MultiTenantWebAuthnCredential
+
+    resource Example.WebAuthnKey
+
   end
 
   json_api do
