@@ -102,7 +102,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
              ),
            {:ok, user} <- create_user(strategy, params, options),
            {:ok, _key} <-
-             upsert_key(strategy, user, credential_id, public_key, sign_count, options),
+             upsert_key(strategy, user, credential_id, public_key, sign_count, params, options),
            {:ok, token, _claims} <- Jwt.token_for_user(user, %{}, [], context) do
         {:ok, Resource.put_metadata(user, :token, token)}
       end
@@ -393,7 +393,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     end
   end
 
-  defp upsert_key(strategy, user, credential_id, public_key, sign_count, options) do
+  defp upsert_key(strategy, user, credential_id, public_key, sign_count, params, options) do
     key_resource = strategy.key_resource
 
     credential_id_attr =
@@ -414,12 +414,14 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     action_name =
       key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_upsert_action_name/1)
 
-    key_params = %{
-      to_string(credential_id_attr) => credential_id,
-      to_string(public_key_attr) => public_key,
-      to_string(sign_count_attr) => sign_count,
-      to_string(user_id_attr) => user.id
-    }
+    key_params =
+      %{
+        to_string(credential_id_attr) => credential_id,
+        to_string(public_key_attr) => public_key,
+        to_string(sign_count_attr) => sign_count,
+        to_string(user_id_attr) => user.id
+      }
+      |> maybe_put_key_name(key_resource, action_name, params)
 
     key_options = Keyword.put_new_lazy(options, :domain, fn -> key_domain(key_resource) end)
 
@@ -507,6 +509,38 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
       value -> value
     end
   end
+
+  defp maybe_put_key_name(key_params, key_resource, action_name, params) do
+    key_name = fetch_param(params, "key_name") || fetch_param(params, "credential_name")
+    key_name = normalize_optional_text(key_name)
+
+    if key_name && key_name_allowed?(key_resource, action_name) do
+      Map.put(key_params, "name", key_name)
+    else
+      key_params
+    end
+  end
+
+  defp key_name_allowed?(key_resource, action_name) do
+    case {Resource.Info.attribute(key_resource, :name),
+          Resource.Info.action(key_resource, action_name)} do
+      {%{}, %{accept: :*}} -> true
+      {%{}, %{accept: accept}} when is_list(accept) -> :name in accept
+      _ -> false
+    end
+  end
+
+  defp normalize_optional_text(value) when is_binary(value) do
+    trimmed = String.trim(value)
+
+    if trimmed == "" do
+      nil
+    else
+      trimmed
+    end
+  end
+
+  defp normalize_optional_text(_), do: nil
 
   defp adapter_verify_opts(_strategy, claims, origin, rp_id) do
     [

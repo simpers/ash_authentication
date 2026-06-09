@@ -362,6 +362,11 @@ defmodule DevServer.TestPage do
           </label>
           <br />
           <label>
+            Key name (optional)
+            <input class="webauthn-key-name" type="text" placeholder="My laptop passkey" />
+          </label>
+          <br />
+          <label>
             Sign-in mode
             <select class="webauthn-sign-in-mode">
               <option value="no_identity">No identity (passkey discovery)</option>

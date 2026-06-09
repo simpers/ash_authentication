@@ -89,6 +89,20 @@ defmodule AshAuthentication.WebAuthn.AdapterTest do
 
       assert result.public_key_credential_options.rp.id == "www.example.com"
     end
+
+    test "applies attestation and timeout options" do
+      opts = [
+        origin: "https://example.com",
+        rp_id: "example.com",
+        attestation: "direct",
+        timeout: 90
+      ]
+
+      assert {:ok, result} = WaxAdapter.new_registration_challenge(opts)
+
+      assert result.public_key_credential_options.attestation == :direct
+      assert result.public_key_credential_options.timeout == 90_000
+    end
   end
 
   describe "new_authentication_challenge/2" do
@@ -132,6 +146,53 @@ defmodule AshAuthentication.WebAuthn.AdapterTest do
       assert {:ok, result} = WaxAdapter.new_authentication_challenge([], opts)
 
       assert result.public_key_credential_options.allowCredentials == []
+    end
+
+    test "applies timeout option" do
+      opts = [
+        origin: "https://example.com",
+        rp_id: "example.com",
+        timeout: 45
+      ]
+
+      assert {:ok, result} = WaxAdapter.new_authentication_challenge([], opts)
+
+      assert result.public_key_credential_options.timeout == 45_000
+    end
+
+    test "derives rpId from origin when rp_id is :auto" do
+      opts = [
+        origin: "https://login.example.com",
+        rp_id: :auto
+      ]
+
+      assert {:ok, result} = WaxAdapter.new_authentication_challenge([], opts)
+
+      assert result.public_key_credential_options.rpId == "login.example.com"
+    end
+
+    test "normalizes user_verification from string options" do
+      opts = [
+        origin: "https://example.com",
+        rp_id: "example.com",
+        user_verification: "required"
+      ]
+
+      assert {:ok, result} = WaxAdapter.new_authentication_challenge([], opts)
+
+      assert result.public_key_credential_options.userVerification == :required
+    end
+
+    test "preserves atom user_verification options" do
+      opts = [
+        origin: "https://example.com",
+        rp_id: "example.com",
+        user_verification: :discouraged
+      ]
+
+      assert {:ok, result} = WaxAdapter.new_authentication_challenge([], opts)
+
+      assert result.public_key_credential_options.userVerification == :discouraged
     end
   end
 end
