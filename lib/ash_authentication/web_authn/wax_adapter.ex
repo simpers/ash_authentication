@@ -17,13 +17,14 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
   @impl Adapter
   def new_registration_challenge(opts) do
     challenge =
-      Wax.new_registration_challenge(
+      [
         origin: Keyword.fetch!(opts, :origin),
         rp_id: Keyword.get(opts, :rp_id, :auto),
         attestation: Keyword.get(opts, :attestation, "none"),
         timeout: Keyword.get(opts, :timeout, 20 * 60),
         user_verification: Keyword.get(opts, :user_verification, "preferred")
-      )
+      ]
+      |> Wax.new_registration_challenge()
 
     {:ok,
      %{
@@ -50,16 +51,16 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
 
   @impl Adapter
   def verify_registration(attestation_object, client_data_json, challenge, opts) do
-    wax_challenge = %Wax.Challenge{
-      bytes: challenge,
-      origin: Keyword.fetch!(opts, :origin),
-      rp_id: Keyword.get(opts, :rp_id, :auto),
-      timeout: Keyword.get(opts, :timeout, 20 * 60),
-      attestation: Keyword.get(opts, :attestation, "none"),
-      type: :attestation,
-      user_verification: Keyword.get(opts, :user_verification, "preferred"),
-      issued_at: System.os_time(:second)
-    }
+    wax_challenge =
+      Wax.new_registration_challenge(
+        origin: Keyword.fetch!(opts, :origin),
+        rp_id: Keyword.get(opts, :rp_id, :auto),
+        timeout: Keyword.get(opts, :timeout, 20 * 60),
+        attestation: Keyword.get(opts, :attestation, "none"),
+        user_verification: Keyword.get(opts, :user_verification, "preferred")
+      )
+      |> Map.put(:bytes, challenge)
+      |> Map.put(:issued_at, System.os_time(:second))
 
     case Wax.register(attestation_object, client_data_json, wax_challenge) do
       {:ok, {authenticator_data, _attestation_result}} ->
@@ -102,9 +103,18 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
          allowCredentials: allow_credentials,
          rpId: challenge.rp_id,
          timeout: challenge.timeout * 1000,
-         userVerification: String.to_atom(challenge.user_verification)
+         userVerification: normalize_user_verification(challenge.user_verification)
        }
      }}
+  end
+
+  defp normalize_user_verification(nil), do: nil
+
+  defp normalize_user_verification(user_verification) when is_atom(user_verification),
+    do: user_verification
+
+  defp normalize_user_verification(user_verification) when is_binary(user_verification) do
+    String.to_atom(user_verification)
   end
 
   @impl Adapter
@@ -117,15 +127,15 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
         _public_key,
         opts
       ) do
-    wax_challenge = %Wax.Challenge{
-      bytes: challenge,
-      origin: Keyword.fetch!(opts, :origin),
-      rp_id: Keyword.get(opts, :rp_id, :auto),
-      timeout: Keyword.get(opts, :timeout, 20 * 60),
-      user_verification: Keyword.get(opts, :user_verification, "preferred"),
-      type: :authentication,
-      issued_at: System.os_time(:second)
-    }
+    wax_challenge =
+      Wax.new_authentication_challenge(
+        origin: Keyword.fetch!(opts, :origin),
+        rp_id: Keyword.get(opts, :rp_id, :auto),
+        timeout: Keyword.get(opts, :timeout, 20 * 60),
+        user_verification: Keyword.get(opts, :user_verification, "preferred")
+      )
+      |> Map.put(:bytes, challenge)
+      |> Map.put(:issued_at, System.os_time(:second))
 
     case Wax.authenticate(
            credential_id,

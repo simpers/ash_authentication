@@ -41,7 +41,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
          {:ok, public_key_attr} <-
            WebAuthnKey.Info.web_authn_key_public_key_attribute_name(dsl_state),
          {:ok, dsl_state} <-
-           maybe_build_attribute(dsl_state, public_key_attr, :binary,
+           maybe_build_attribute(dsl_state, public_key_attr, AshAuthentication.Type.CoseKey,
              allow_nil?: false,
              sensitive?: true,
              writable?: true,
