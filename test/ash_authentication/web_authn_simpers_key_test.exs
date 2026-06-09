@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthnKeyTest do
+defmodule AshAuthentication.WebAuthnSimpersKeyTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
@@ -12,7 +12,7 @@ defmodule AshAuthentication.WebAuthnKeyTest do
   @moduletag feature: :webauthn
 
   test "key extension injects required attributes, relationship, identity, and actions" do
-    resource = Example.WebAuthnKeyWithDefaults
+    resource = Example.WebAuthnSimpersKeyWithDefaults
 
     assert Info.attribute(resource, :credential_id)
     assert Info.attribute(resource, :public_key)
@@ -25,7 +25,7 @@ defmodule AshAuthentication.WebAuthnKeyTest do
     relationship = Enum.find(Info.relationships(resource), &(&1.name == :user))
     assert relationship
     assert relationship.type == :belongs_to
-    assert relationship.destination == Example.UserWithWebAuthnWithDefaults
+    assert relationship.destination == Example.UserWithWebAuthnSimpersWithDefaults
 
     identity = Enum.find(Info.identities(resource), &(&1.name == :unique_credential_id))
     assert identity

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthn.Adapter do
+defmodule AshAuthentication.WebAuthnSimpers.Adapter do
   @moduledoc """
   Behaviour for WebAuthn adapter implementations.
 

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthn.WaxAdapter do
+defmodule AshAuthentication.WebAuthnSimpers.WaxAdapter do
   @moduledoc """
   Default WebAuthn adapter implementation using the `wax_` library.
 
@@ -10,9 +10,9 @@ defmodule AshAuthentication.WebAuthn.WaxAdapter do
   for all WebAuthn cryptographic operations.
   """
 
-  @behaviour AshAuthentication.WebAuthn.Adapter
+  @behaviour AshAuthentication.WebAuthnSimpers.Adapter
 
-  alias AshAuthentication.WebAuthn.Adapter
+  alias AshAuthentication.WebAuthnSimpers.Adapter
 
   @impl Adapter
   def new_registration_challenge(opts) do

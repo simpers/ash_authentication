@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthnKey.Verifier do
+defmodule AshAuthentication.WebAuthnSimpersKey.Verifier do
   @moduledoc """
   The WebAuthn key verifier.
 
@@ -17,7 +17,7 @@ defmodule AshAuthentication.WebAuthnKey.Verifier do
   import AshAuthentication.Validations.Attribute
 
   alias Ash.Resource
-  alias AshAuthentication.WebAuthnKey.Info
+  alias AshAuthentication.WebAuthnSimpersKey.Info
   alias Spark.{Dsl.Verifier, Error.DslError}
 
   @valid_public_key_attribute_types [

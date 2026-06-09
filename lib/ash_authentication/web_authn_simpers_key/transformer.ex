@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthnKey.Transformer do
+defmodule AshAuthentication.WebAuthnSimpersKey.Transformer do
   @moduledoc """
   The WebAuthn key transformer.
 
@@ -15,7 +15,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
   import AshAuthentication.Validations
 
   alias Ash.Resource
-  alias AshAuthentication.WebAuthnKey
+  alias AshAuthentication.WebAuthnSimpersKey
   alias Spark.Dsl.Transformer
 
   @doc false
@@ -30,7 +30,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
   def transform(dsl_state) do
     with {:ok, dsl_state} <- maybe_set_domain(dsl_state, :web_authn_key),
          {:ok, credential_id_attr} <-
-           WebAuthnKey.Info.web_authn_key_credential_id_attribute_name(dsl_state),
+           WebAuthnSimpersKey.Info.web_authn_key_credential_id_attribute_name(dsl_state),
          {:ok, dsl_state} <-
            maybe_build_attribute(dsl_state, credential_id_attr, :binary,
              allow_nil?: false,
@@ -39,7 +39,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
              public?: false
            ),
          {:ok, public_key_attr} <-
-           WebAuthnKey.Info.web_authn_key_public_key_attribute_name(dsl_state),
+           WebAuthnSimpersKey.Info.web_authn_key_public_key_attribute_name(dsl_state),
          {:ok, dsl_state} <-
            maybe_build_attribute(dsl_state, public_key_attr, AshAuthentication.Type.CoseKey,
              allow_nil?: false,
@@ -48,7 +48,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
              public?: false
            ),
          {:ok, sign_count_attr} <-
-           WebAuthnKey.Info.web_authn_key_sign_count_attribute_name(dsl_state),
+           WebAuthnSimpersKey.Info.web_authn_key_sign_count_attribute_name(dsl_state),
          {:ok, dsl_state} <-
            maybe_build_attribute(dsl_state, sign_count_attr, :integer,
              allow_nil?: false,
@@ -56,8 +56,9 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
              public?: false,
              default: 0
            ),
-         {:ok, user_id_attr} <- WebAuthnKey.Info.web_authn_key_user_id_attribute_name(dsl_state),
-         {:ok, user_id_type} <- WebAuthnKey.Info.web_authn_key_user_id_type(dsl_state),
+         {:ok, user_id_attr} <-
+           WebAuthnSimpersKey.Info.web_authn_key_user_id_attribute_name(dsl_state),
+         {:ok, user_id_type} <- WebAuthnSimpersKey.Info.web_authn_key_user_id_type(dsl_state),
          {:ok, dsl_state} <-
            maybe_build_attribute(dsl_state, user_id_attr, user_id_type,
              allow_nil?: false,
@@ -74,19 +75,22 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
   end
 
   defp maybe_build_actions(dsl_state, credential_id_attr, public_key_attr, sign_count_attr) do
-    with {:ok, user_id_attr} <- WebAuthnKey.Info.web_authn_key_user_id_attribute_name(dsl_state),
-         {:ok, aaguid_attr} <- WebAuthnKey.Info.web_authn_key_aaguid_attribute_name(dsl_state),
+    with {:ok, user_id_attr} <-
+           WebAuthnSimpersKey.Info.web_authn_key_user_id_attribute_name(dsl_state),
+         {:ok, aaguid_attr} <-
+           WebAuthnSimpersKey.Info.web_authn_key_aaguid_attribute_name(dsl_state),
          {:ok, transports_attr} <-
-           WebAuthnKey.Info.web_authn_key_transports_attribute_name(dsl_state),
+           WebAuthnSimpersKey.Info.web_authn_key_transports_attribute_name(dsl_state),
          {:ok, last_used_at_attr} <-
-           WebAuthnKey.Info.web_authn_key_last_used_at_attribute_name(dsl_state),
-         {:ok, read_action_name} <- WebAuthnKey.Info.web_authn_key_read_action_name(dsl_state),
+           WebAuthnSimpersKey.Info.web_authn_key_last_used_at_attribute_name(dsl_state),
+         {:ok, read_action_name} <-
+           WebAuthnSimpersKey.Info.web_authn_key_read_action_name(dsl_state),
          {:ok, dsl_state} <- maybe_build_read_action(dsl_state, read_action_name),
          {:ok, destroy_action_name} <-
-           WebAuthnKey.Info.web_authn_key_destroy_action_name(dsl_state),
+           WebAuthnSimpersKey.Info.web_authn_key_destroy_action_name(dsl_state),
          {:ok, dsl_state} <- maybe_build_destroy_action(dsl_state, destroy_action_name),
          {:ok, upsert_action_name} <-
-           WebAuthnKey.Info.web_authn_key_upsert_action_name(dsl_state),
+           WebAuthnSimpersKey.Info.web_authn_key_upsert_action_name(dsl_state),
          {:ok, dsl_state} <-
            maybe_build_upsert_action(
              dsl_state,
@@ -112,7 +116,8 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
   end
 
   defp maybe_build_aaguid(dsl_state) do
-    with {:ok, aaguid_attr} <- WebAuthnKey.Info.web_authn_key_aaguid_attribute_name(dsl_state) do
+    with {:ok, aaguid_attr} <-
+           WebAuthnSimpersKey.Info.web_authn_key_aaguid_attribute_name(dsl_state) do
       # Build aaguid only if there's no existing attribute with that name
       case find_attribute(dsl_state, aaguid_attr) do
         {:ok, _} ->
@@ -130,7 +135,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
 
   defp maybe_build_transports(dsl_state) do
     with {:ok, transports_attr} <-
-           WebAuthnKey.Info.web_authn_key_transports_attribute_name(dsl_state) do
+           WebAuthnSimpersKey.Info.web_authn_key_transports_attribute_name(dsl_state) do
       # Build transports only if there's no existing attribute with that name
       case find_attribute(dsl_state, transports_attr) do
         {:ok, _} ->
@@ -149,7 +154,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
 
   defp maybe_build_last_used_at(dsl_state) do
     with {:ok, last_used_at_attr} <-
-           WebAuthnKey.Info.web_authn_key_last_used_at_attribute_name(dsl_state) do
+           WebAuthnSimpersKey.Info.web_authn_key_last_used_at_attribute_name(dsl_state) do
       # Build last_used_at only if there's no existing attribute with that name
       case find_attribute(dsl_state, last_used_at_attr) do
         {:ok, _} ->
@@ -166,10 +171,11 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
   end
 
   defp maybe_define_relationship(dsl_state) do
-    with {:ok, user_resource} <- WebAuthnKey.Info.web_authn_key_user_resource(dsl_state),
+    with {:ok, user_resource} <- WebAuthnSimpersKey.Info.web_authn_key_user_resource(dsl_state),
          {:ok, relationship_name} <-
-           WebAuthnKey.Info.web_authn_key_user_relationship_name(dsl_state),
-         {:ok, user_id_attr} <- WebAuthnKey.Info.web_authn_key_user_id_attribute_name(dsl_state) do
+           WebAuthnSimpersKey.Info.web_authn_key_user_relationship_name(dsl_state),
+         {:ok, user_id_attr} <-
+           WebAuthnSimpersKey.Info.web_authn_key_user_id_attribute_name(dsl_state) do
       # Build the belongs_to relationship if it doesn't exist
       case get_relationship(dsl_state, relationship_name) do
         {:ok, _} ->
@@ -189,7 +195,8 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
               allow_nil?: true
             )
 
-          {:ok, Transformer.add_entity(dsl_state, [:relationships], %{relationship | source: source})}
+          {:ok,
+           Transformer.add_entity(dsl_state, [:relationships], %{relationship | source: source})}
       end
     else
       nil ->
@@ -198,7 +205,7 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
   end
 
   defp maybe_build_unique_identity(dsl_state, credential_id_attr) do
-    with {:ok, _user_resource} <- WebAuthnKey.Info.web_authn_key_user_resource(dsl_state) do
+    with {:ok, _user_resource} <- WebAuthnSimpersKey.Info.web_authn_key_user_resource(dsl_state) do
       # Create a unique identity on credential_id
       # This enforces that a credential ID is globally unique
       identity_name = :unique_credential_id
@@ -354,5 +361,4 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
       action -> {:ok, action}
     end
   end
-
 end

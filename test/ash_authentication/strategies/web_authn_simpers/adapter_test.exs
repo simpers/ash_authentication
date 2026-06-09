@@ -2,15 +2,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthn.AdapterTest do
+defmodule AshAuthentication.WebAuthnSimpers.AdapterTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
 
   @moduletag feature: :webauthn
 
-  alias AshAuthentication.WebAuthn.Adapter
-  alias AshAuthentication.WebAuthn.WaxAdapter
+  alias AshAuthentication.WebAuthnSimpers.Adapter
+  alias AshAuthentication.WebAuthnSimpers.WaxAdapter
 
   describe "Adapter behaviour" do
     test "WaxAdapter implements the Adapter behaviour" do

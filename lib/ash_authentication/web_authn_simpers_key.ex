@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.WebAuthnKey do
+defmodule AshAuthentication.WebAuthnSimpersKey do
   @moduledoc false
 
   @dsl [
@@ -180,7 +180,8 @@ defmodule AshAuthentication.WebAuthnKey do
         ],
         user_id_type: [
           type: :atom,
-          doc: "The type of the `user_id` attribute. Defaults to `:uuid` but should match the primary key type of your user resource (e.g. `:string` for NanoId).",
+          doc:
+            "The type of the `user_id` attribute. Defaults to `:uuid` but should match the primary key type of your user resource (e.g. `:string` for NanoId).",
           default: :uuid
         ],
         upsert_action_name: [
@@ -211,9 +212,9 @@ defmodule AshAuthentication.WebAuthnKey do
   use Spark.Dsl.Extension,
     sections: @dsl,
     transformers: [
-      AshAuthentication.WebAuthnKey.Transformer
+      AshAuthentication.WebAuthnSimpersKey.Transformer
     ],
     verifiers: [
-      AshAuthentication.WebAuthnKey.Verifier
+      AshAuthentication.WebAuthnSimpersKey.Verifier
     ]
 end

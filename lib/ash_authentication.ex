@@ -159,7 +159,8 @@ defmodule AshAuthentication do
     AshAuthentication.Strategy.RememberMe,
     AshAuthentication.Strategy.Slack,
     AshAuthentication.Strategy.Totp,
-    AshAuthentication.Strategy.WebAuthn
+    AshAuthentication.Strategy.WebAuthn,
+    AshAuthentication.Strategy.WebAuthnSimpers
   ]
 
   use Spark.Dsl.Extension,

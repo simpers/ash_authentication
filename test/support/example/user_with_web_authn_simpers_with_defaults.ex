@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule Example.UserWithWebAuthnWithDefaults do
+defmodule Example.UserWithWebAuthnSimpersWithDefaults do
   defmodule Secret do
     @moduledoc false
 
@@ -85,7 +85,7 @@ defmodule Example.UserWithWebAuthnWithDefaults do
 
     strategies do
       web_authn do
-        key_resource Example.WebAuthnKeyWithDefaults
+        key_resource Example.WebAuthnSimpersKeyWithDefaults
         relying_party Secret
       end
     end
@@ -100,7 +100,7 @@ defmodule Example.UserWithWebAuthnWithDefaults do
   end
 
   relationships do
-    has_many :web_authn_keys, Example.WebAuthnKeyWithDefaults do
+    has_many :web_authn_keys, Example.WebAuthnSimpersKeyWithDefaults do
       destination_attribute :user_id
     end
   end

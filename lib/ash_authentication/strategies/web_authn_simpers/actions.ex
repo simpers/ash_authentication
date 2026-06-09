@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn.Actions do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers.Actions do
   @moduledoc """
   Action handlers for the WebAuthn strategy.
   """
@@ -19,9 +19,9 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
   alias AshAuthentication.Errors
   alias AshAuthentication.Info
   alias AshAuthentication.Jwt
-  alias AshAuthentication.Strategy.WebAuthn
-  alias AshAuthentication.Strategy.WebAuthn.Resolver
-  alias AshAuthentication.WebAuthnKey
+  alias AshAuthentication.Strategy.WebAuthnSimpers
+  alias AshAuthentication.Strategy.WebAuthnSimpers.Resolver
+  alias AshAuthentication.WebAuthnSimpersKey
 
   @state_token_lifetime {5, :minutes}
   @web_authn_key_input "web_authn_key"
@@ -31,7 +31,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
 
   Returns options for the browser's WebAuthn API along with a signed state token.
   """
-  @spec register_begin(WebAuthn.t(), map(), keyword()) ::
+  @spec register_begin(WebAuthnSimpers.t(), map(), keyword()) ::
           {:ok, Resource.record()} | {:error, any()}
   def register_begin(strategy, params, options) do
     {context, _options} = Keyword.pop(options, :context, %{})
@@ -81,7 +81,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
 
   Verifies the browser's response and persists the credential.
   """
-  @spec register_finish(WebAuthn.t(), map(), keyword()) ::
+  @spec register_finish(WebAuthnSimpers.t(), map(), keyword()) ::
           {:ok, Resource.record()} | {:error, any()}
   def register_finish(strategy, params, options) do
     {context, options} = Keyword.pop(options, :context, %{})
@@ -114,7 +114,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
 
   Returns options for the browser's WebAuthn API along with a signed state token.
   """
-  @spec sign_in_begin(WebAuthn.t(), map(), keyword()) ::
+  @spec sign_in_begin(WebAuthnSimpers.t(), map(), keyword()) ::
           {:ok, Resource.record()} | {:error, any()}
   def sign_in_begin(strategy, params, options) do
     {context, _options} = Keyword.pop(options, :context, %{})
@@ -152,7 +152,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
 
   Verifies the browser's response and returns the authenticated user.
   """
-  @spec sign_in_finish(WebAuthn.t(), map(), keyword()) ::
+  @spec sign_in_finish(WebAuthnSimpers.t(), map(), keyword()) ::
           {:ok, Resource.record()} | {:error, any()}
   def sign_in_finish(strategy, params, options) do
     {context, options} = Keyword.pop(options, :context, %{})
@@ -196,7 +196,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     Application.get_env(
       :ash_authentication,
       :web_authn_adapter,
-      AshAuthentication.WebAuthn.WaxAdapter
+      AshAuthentication.WebAuthnSimpers.WaxAdapter
     )
   end
 
@@ -407,19 +407,25 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     web_authn_key = fetch_param(params, @web_authn_key_input) || %{}
 
     action_name =
-      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_upsert_action_name/1)
+      key_info_value!(key_resource, &WebAuthnSimpersKey.Info.web_authn_key_upsert_action_name/1)
 
     credential_id_attr =
       key_info_value!(
         key_resource,
-        &WebAuthnKey.Info.web_authn_key_credential_id_attribute_name/1
+        &WebAuthnSimpersKey.Info.web_authn_key_credential_id_attribute_name/1
       )
 
     public_key_attr =
-      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_public_key_attribute_name/1)
+      key_info_value!(
+        key_resource,
+        &WebAuthnSimpersKey.Info.web_authn_key_public_key_attribute_name/1
+      )
 
     sign_count_attr =
-      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_sign_count_attribute_name/1)
+      key_info_value!(
+        key_resource,
+        &WebAuthnSimpersKey.Info.web_authn_key_sign_count_attribute_name/1
+      )
 
     web_authn_key
     |> Map.drop([
@@ -444,14 +450,17 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     credential_id_attr =
       key_info_value!(
         key_resource,
-        &WebAuthnKey.Info.web_authn_key_credential_id_attribute_name/1
+        &WebAuthnSimpersKey.Info.web_authn_key_credential_id_attribute_name/1
       )
 
     read_action_name =
-      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_read_action_name/1)
+      key_info_value!(key_resource, &WebAuthnSimpersKey.Info.web_authn_key_read_action_name/1)
 
     user_relationship =
-      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_user_relationship_name/1)
+      key_info_value!(
+        key_resource,
+        &WebAuthnSimpersKey.Info.web_authn_key_user_relationship_name/1
+      )
 
     key_options = Keyword.put_new_lazy(options, :domain, fn -> key_domain(key_resource) end)
 
@@ -474,7 +483,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     user_relationship =
       key_info_value!(
         strategy.key_resource,
-        &WebAuthnKey.Info.web_authn_key_user_relationship_name/1
+        &WebAuthnSimpersKey.Info.web_authn_key_user_relationship_name/1
       )
 
     Map.get(key, user_relationship)
@@ -503,7 +512,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
   end
 
   defp key_domain(resource) do
-    case WebAuthnKey.Info.web_authn_key_domain(resource) do
+    case WebAuthnSimpersKey.Info.web_authn_key_domain(resource) do
       {:ok, domain} -> domain
       :error -> Resource.Info.domain(resource)
     end

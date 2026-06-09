@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn.Transformer do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers.Transformer do
   @moduledoc false
 
   import AshAuthentication.Strategy.Custom.Helpers
@@ -11,18 +11,18 @@ defmodule AshAuthentication.Strategy.WebAuthn.Transformer do
 
   alias Ash.Resource
   alias Ash.Resource.Change.Builtins
-  alias AshAuthentication.WebAuthnKey
+  alias AshAuthentication.WebAuthnSimpersKey
   alias Spark.Dsl.Transformer
   alias Spark.Error.DslError
 
   alias AshAuthentication.SetAshAuthenticationContextChange
-  alias AshAuthentication.Strategy.WebAuthn
+  alias AshAuthentication.Strategy.WebAuthnSimpers
 
   @web_authn_key_argument :web_authn_key
 
   @doc false
-  @spec transform(WebAuthn.t(), dsl_state) ::
-          {:ok, WebAuthn.t() | dsl_state} | {:error, any()}
+  @spec transform(WebAuthnSimpers.t(), dsl_state) ::
+          {:ok, WebAuthnSimpers.t() | dsl_state} | {:error, any()}
         when dsl_state: map()
   def transform(strategy, dsl_state) do
     strategy =
@@ -66,7 +66,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Transformer do
   defp build_register_action(dsl_state, strategy) do
     with {:ok, relationship_name} <- web_authn_keys_relationship_name(dsl_state, strategy),
          {:ok, upsert_action_name} <-
-           WebAuthnKey.Info.web_authn_key_upsert_action_name(strategy.key_resource) do
+           WebAuthnSimpersKey.Info.web_authn_key_upsert_action_name(strategy.key_resource) do
       argument =
         Transformer.build_entity!(Resource.Dsl, [:actions, :create], :argument,
           name: @web_authn_key_argument,

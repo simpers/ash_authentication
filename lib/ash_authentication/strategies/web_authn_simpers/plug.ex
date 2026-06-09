@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn.Plug do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers.Plug do
   @moduledoc """
   Plugs for the WebAuthn strategy.
 
@@ -24,12 +24,12 @@ defmodule AshAuthentication.Strategy.WebAuthn.Plug do
 
   alias AshAuthentication.Info
   alias AshAuthentication.Strategy
-  alias AshAuthentication.Strategy.WebAuthn
+  alias AshAuthentication.Strategy.WebAuthnSimpers
 
   alias Plug.Conn
 
   @doc "Handle the beginning of a registration request"
-  @spec register_begin(Conn.t(), WebAuthn.t()) :: Conn.t()
+  @spec register_begin(Conn.t(), WebAuthnSimpers.t()) :: Conn.t()
   def register_begin(conn, strategy) do
     Logger.debug("Handling WebAuthn registration begin")
 
@@ -40,7 +40,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Plug do
   end
 
   @doc "Handle the completion of a registration request"
-  @spec register_finish(Conn.t(), WebAuthn.t()) :: Conn.t()
+  @spec register_finish(Conn.t(), WebAuthnSimpers.t()) :: Conn.t()
   def register_finish(conn, strategy) do
     Logger.debug("Handling WebAuthn registration finish")
 
@@ -52,7 +52,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Plug do
   end
 
   @doc "Handle the beginning of a sign-in request"
-  @spec sign_in_begin(Conn.t(), WebAuthn.t()) :: Conn.t()
+  @spec sign_in_begin(Conn.t(), WebAuthnSimpers.t()) :: Conn.t()
   def sign_in_begin(conn, strategy) do
     Logger.debug("Handling WebAuthn sign-in begin")
 
@@ -63,7 +63,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Plug do
   end
 
   @doc "Handle the completion of a sign-in request"
-  @spec sign_in_finish(Conn.t(), WebAuthn.t()) :: Conn.t()
+  @spec sign_in_finish(Conn.t(), WebAuthnSimpers.t()) :: Conn.t()
   def sign_in_finish(conn, strategy) do
     Logger.debug("Handling WebAuthn sign-in finish")
 

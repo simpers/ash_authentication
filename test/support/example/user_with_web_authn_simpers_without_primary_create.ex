@@ -2,12 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule Example.UserWithWebAuthnWithRequiredIdentity do
+defmodule Example.UserWithWebAuthnSimpersWithoutPrimaryCreate do
   @moduledoc false
 
   use Ash.Resource,
     domain: Example,
     data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer],
     extensions: [AshAuthentication]
 
   attributes do
@@ -15,7 +16,7 @@ defmodule Example.UserWithWebAuthnWithRequiredIdentity do
     timestamps()
 
     attribute :email, :ci_string,
-      allow_nil?: false,
+      allow_nil?: true,
       public?: true
   end
 
@@ -25,7 +26,7 @@ defmodule Example.UserWithWebAuthnWithRequiredIdentity do
       store_all_tokens? true
       require_token_presence_for_authentication? true
       token_resource Example.Token
-      signing_secret &Example.UserWithWebAuthnWithDefaults.get_config/2
+      signing_secret &Example.UserWithWebAuthnSimpersWithDefaults.get_config/2
     end
 
     add_ons do
@@ -34,23 +35,28 @@ defmodule Example.UserWithWebAuthnWithRequiredIdentity do
 
     strategies do
       web_authn do
-        key_resource Example.WebAuthnKeyWithRequiredIdentity
-        relying_party Example.UserWithWebAuthnWithDefaults.Secret
-        require_identity? true
+        key_resource Example.WebAuthnSimpersKeyWithoutPrimaryCreate
+        relying_party Example.UserWithWebAuthnSimpersWithDefaults.Secret
       end
     end
   end
 
   actions do
-    defaults [:read, :destroy, create: :*, update: :*]
+    defaults [:read, :destroy, update: :*]
   end
 
   identities do
     identity :email, [:email]
   end
 
+  policies do
+    bypass always() do
+      authorize_if AshAuthentication.Checks.AshAuthenticationInteraction
+    end
+  end
+
   relationships do
-    has_many :web_authn_keys, Example.WebAuthnKeyWithRequiredIdentity do
+    has_many :web_authn_keys, Example.WebAuthnSimpersKeyWithoutPrimaryCreate do
       destination_attribute :user_id
     end
   end

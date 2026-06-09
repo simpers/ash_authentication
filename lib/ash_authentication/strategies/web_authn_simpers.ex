@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers do
   @moduledoc """
   Strategy for authenticating using a WebAuthn protocol, such as a YubiKey or a
   Passkey.
@@ -37,16 +37,16 @@ defmodule AshAuthentication.Strategy.WebAuthn do
             __spark_metadata__: nil
 
   alias AshAuthentication.Strategy.Custom
-  alias AshAuthentication.Strategy.WebAuthn
+  alias AshAuthentication.Strategy.WebAuthnSimpers
 
-  use Custom, entity: WebAuthn.Dsl.dsl()
-
-  @doc false
-  defdelegate dsl(), to: WebAuthn.Dsl
+  use Custom, entity: WebAuthnSimpers.Dsl.dsl()
 
   @doc false
-  defdelegate transform(strategy, dsl_state), to: WebAuthn.Transformer
+  defdelegate dsl(), to: WebAuthnSimpers.Dsl
 
   @doc false
-  defdelegate verify(strategy, dsl_state), to: WebAuthn.Verifier
+  defdelegate transform(strategy, dsl_state), to: WebAuthnSimpers.Transformer
+
+  @doc false
+  defdelegate verify(strategy, dsl_state), to: WebAuthnSimpers.Verifier
 end

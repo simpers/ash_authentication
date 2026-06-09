@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-defmodule AshAuthentication.Strategy.WebAuthn.Dsl do
+defmodule AshAuthentication.Strategy.WebAuthnSimpers.Dsl do
   @moduledoc false
 
-  alias AshAuthentication.Strategy.WebAuthn
+  alias AshAuthentication.Strategy.WebAuthnSimpers
   alias Spark.Dsl.Entity
 
   secret_type = AshAuthentication.Dsl.secret_type()
@@ -76,7 +76,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Dsl do
       describe: "Strategy for authentication using WebAuthn (passkeys)",
       args: [{:optional, :name, :web_authn}],
       hide: [:name],
-      target: WebAuthn,
+      target: WebAuthnSimpers,
       schema: @schema
     }
   end
