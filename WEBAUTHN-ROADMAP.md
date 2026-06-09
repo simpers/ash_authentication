@@ -24,6 +24,21 @@
   - [x] Guard optional dependency usage (`:cbor` is optional) — check added to `WebAuthnKey.Verifier`
   - [x] Fix decode/cast behavior to return decoded term (or remove if not used)
 
+### PR 3 Complete ✅
+
+- [x] Defined `WebAuthnKey` resource contract with required attributes:
+  - [x] `credential_id` (binary, unique)
+  - [x] `public_key` (binary)
+  - [x] `sign_count` (integer)
+- [x] Added relationship to user (`belongs_to`)
+- [x] Created `WebAuthnKey.Info` module for DSL introspection
+- [x] Implemented transformer to auto-generate required attributes
+- [x] Implemented verifier to validate resource contract
+- [x] Added optional fields (`aaguid`, `transports`, `last_used_at`)
+- [x] Chose Option B: enforce contract via verifiers (MVP-friendly)
+- [x] Removed `user_handle` (belongs on User resource for discoverable credentials)
+- [x] Updated DSL schema with WebAuthn-specific field names and comprehensive documentation
+
 ---
 
 ## MVP Definition (what “usable” means)
@@ -104,34 +119,36 @@ Notes:
 
 ---
 
-### PR 3 — Define the `WebAuthnKey` resource contract (data model MVP)
+### PR 3 — Define the `WebAuthnKey` resource contract (data model MVP) ✅
 
 **Goal:** formalize what `key_resource` must store and validate it.
 
-Minimum recommended fields (implementation may vary by library):
+Minimum required fields:
 
-- [ ] `credential_id` (binary) unique
-- [ ] `public_key` (binary; COSE or library-defined)
-- [ ] `sign_count` (integer)
-- [ ] Relationship to user (`belongs_to :user, …`) and a usable foreign key
-- [ ] Optional but recommended:
-  - [ ] `aaguid`
-  - [ ] `transports`
-  - [ ] `user_handle`
-  - [ ] `last_used_at`
+- [x] `credential_id` (binary) unique
+- [x] `public_key` (binary; COSE or library-defined)
+- [x] `sign_count` (integer)
+- [x] Relationship to user (`belongs_to :user, …`) and a usable foreign key
 
-Implementation decisions:
+Optional but recommended fields:
 
-- [ ] Decide whether `AshAuthentication.WebAuthnKey` extension will:
-  - [ ] A) auto-generate attributes/identities/actions (like TokenResource), or
-  - [ ] B) enforce a contract via verifiers (MVP-friendly)
+- [x] `aaguid`
+- [x] `transports`
+- [x] `last_used_at`
+- [x] `user_handle` (REMOVED - belongs on User resource for discoverable credentials)
 
-Verifier work:
+Implementation decisions made:
 
-- [ ] Validate `key_resource` has required attributes + relationship to user
-- [ ] Validate required actions exist (read/upsert/destroy), or document how the strategy uses the resource
+- [x] Chose **Option B**: enforce a contract via verifiers (MVP-friendly)
+- [x] Created `AshAuthentication.WebAuthnKey.Info` module for DSL introspection
+- [x] Transformer auto-generates required attributes (like TokenResource)
+- [x] Verifier validates:
+  - [x] Required attributes exist with correct types
+  - [x] User relationship exists
+  - [x] Unique identity on `credential_id`
+  - [x] Optional dependencies (`:cbor`, `:wax_`) are present
 
-**Exit criteria:** the strategy can reliably look up a credential and resolve its user.
+**Exit criteria:** the strategy can reliably look up a credential and resolve its user. ✅
 
 ---
 
@@ -209,8 +226,11 @@ Recommended order:
 
 ## Open Questions / Decisions (track here)
 
-- [ ] Which underlying WebAuthn library will we use?
-- [ ] How will we sign and validate the begin/finish “state” token?
-- [ ] What should the minimal required `key_resource` fields be for our chosen library?
-- [ ] Do we want to auto-generate parts of the key resource (extension transformer) or enforce a contract (verifier-only) for MVP?
-- [ ] What’s the default stance on `require_identity?`?
+## Open Questions / Decisions (track here)
+
+- [x] Which underlying WebAuthn library will we use? → `wax_`
+- [ ] How will we sign and validate the begin/finish "state" token? → (pending PR 4)
+- [x] What should the minimal required `key_resource` fields be for our chosen library? → credential_id, public_key, sign_count + user relationship
+- [x] Do we want to auto-generate parts of the key resource (extension transformer) or enforce a contract (verifier-only) for MVP? → Auto-generate + verify (hybrid approach)
+- [ ] What's the default stance on `require_identity?`? → (pending PR 5)
+- [ ] How should state tokens be structured and signed in begin/finish phases?
