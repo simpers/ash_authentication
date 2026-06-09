@@ -12,7 +12,7 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
 
   describe "strategy protocol" do
     setup do
-      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthn, :web_authn)}
+      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)}
     end
 
     test "name/1 returns the strategy name", %{strategy: strategy} do
@@ -41,10 +41,14 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
       routes = Strategy.routes(strategy)
 
       assert length(routes) == 4
-      assert {"/user_with_web_authn/web_authn/register_begin", :register_begin} in routes
-      assert {"/user_with_web_authn/web_authn/register_finish", :register_finish} in routes
-      assert {"/user_with_web_authn/web_authn/sign_in_begin", :sign_in_begin} in routes
-      assert {"/user_with_web_authn/web_authn/sign_in_finish", :sign_in_finish} in routes
+
+      assert {"/user_with_web_authn_with_defaults/web_authn/register_begin", :register_begin} in routes
+
+      assert {"/user_with_web_authn_with_defaults/web_authn/register_finish", :register_finish} in routes
+
+      assert {"/user_with_web_authn_with_defaults/web_authn/sign_in_begin", :sign_in_begin} in routes
+
+      assert {"/user_with_web_authn_with_defaults/web_authn/sign_in_finish", :sign_in_finish} in routes
     end
 
     test "method_for_phase/2 returns :post for all phases", %{strategy: strategy} do
@@ -61,7 +65,7 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
 
   describe "transformer" do
     test "sets default action names based on strategy name" do
-      strategy = Info.strategy!(Example.UserWithWebAuthn, :web_authn)
+      strategy = Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)
 
       assert strategy.register_begin_action_name == :register_begin_with_web_authn
       assert strategy.register_finish_action_name == :register_finish_with_web_authn
@@ -70,18 +74,26 @@ defmodule AshAuthentication.Strategy.WebAuthnTest do
     end
 
     test "strategy has correct configuration from DSL" do
-      strategy = Info.strategy!(Example.UserWithWebAuthn, :web_authn)
+      strategy = Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)
 
-      assert strategy.key_resource == Example.WebAuthnKey
-      assert strategy.relying_party == {Example.UserWithWebAuthn.Secret, []}
+      assert strategy.key_resource == Example.WebAuthnKeyWithDefaults
+      assert strategy.relying_party == {Example.UserWithWebAuthnWithDefaults.Secret, []}
       assert strategy.require_identity? == false
-      assert strategy.resource == Example.UserWithWebAuthn
+      assert strategy.resource == Example.UserWithWebAuthnWithDefaults
+    end
+
+    test "required identity fixture overrides require_identity?" do
+      strategy = Info.strategy!(Example.UserWithWebAuthnWithRequiredIdentity, :web_authn)
+
+      assert strategy.key_resource == Example.WebAuthnKeyWithRequiredIdentity
+      assert strategy.require_identity? == true
+      assert strategy.resource == Example.UserWithWebAuthnWithRequiredIdentity
     end
   end
 
   describe "actions" do
     setup do
-      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthn, :web_authn)}
+      {:ok, strategy: Info.strategy!(Example.UserWithWebAuthnWithDefaults, :web_authn)}
     end
 
     test "register_begin returns authentication failure without origin", %{strategy: strategy} do
