@@ -178,6 +178,11 @@ defmodule AshAuthentication.WebAuthnKey do
           doc: "The name of the `user_id` attribute on this resource.",
           default: :user_id
         ],
+        user_id_type: [
+          type: :atom,
+          doc: "The type of the `user_id` attribute. Defaults to `:uuid` but should match the primary key type of your user resource (e.g. `:string` for NanoId).",
+          default: :uuid
+        ],
         upsert_action_name: [
           type: :atom,
           doc: "The name of the action used to create and update records.",
