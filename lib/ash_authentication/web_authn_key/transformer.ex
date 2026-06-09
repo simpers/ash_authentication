@@ -218,15 +218,41 @@ defmodule AshAuthentication.WebAuthnKey.Transformer do
 
   defp maybe_build_read_action(dsl_state, action_name) do
     case get_action(dsl_state, action_name) do
-      {:ok, _} ->
-        {:ok, dsl_state}
+      {:ok, action} ->
+        maybe_set_primary_read_action(dsl_state, action)
 
       _ ->
         {:ok, action} =
-          Transformer.build_entity(Resource.Dsl, [:actions], :read, name: action_name)
+          Transformer.build_entity(Resource.Dsl, [:actions], :read,
+            name: action_name,
+            primary?: no_primary_read_action?(dsl_state)
+          )
 
         {:ok, Transformer.add_entity(dsl_state, [:actions], action)}
     end
+  end
+
+  defp maybe_set_primary_read_action(dsl_state, %{type: :read, primary?: false} = action) do
+    if no_primary_read_action?(dsl_state) do
+      {:ok,
+       Transformer.replace_entity(
+         dsl_state,
+         [:actions],
+         %{action | primary?: true},
+         &(&1.name == action.name)
+       )}
+    else
+      {:ok, dsl_state}
+    end
+  end
+
+  defp maybe_set_primary_read_action(dsl_state, _action), do: {:ok, dsl_state}
+
+  defp no_primary_read_action?(dsl_state) do
+    not Enum.any?(
+      Transformer.get_entities(dsl_state, [:actions]),
+      &(&1.type == :read && &1.primary?)
+    )
   end
 
   defp maybe_build_destroy_action(dsl_state, action_name) do

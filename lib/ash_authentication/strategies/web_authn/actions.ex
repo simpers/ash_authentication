@@ -24,6 +24,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
   alias AshAuthentication.WebAuthnKey
 
   @state_token_lifetime {5, :minutes}
+  @web_authn_key_input "web_authn_key"
 
   @doc """
   Begin the registration process.
@@ -88,7 +89,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
 
     result =
       with {:ok, finish_context} <- registration_finish_context(strategy, params, context),
-           {:ok, %{credential_id: credential_id, public_key: public_key, sign_count: sign_count}} <-
+           {:ok, registration_data} <-
              adapter().verify_registration(
                finish_context.attestation_object,
                finish_context.client_data_json,
@@ -100,9 +101,7 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
                  finish_context.rp_id
                )
              ),
-           {:ok, user} <- create_user(strategy, params, options),
-           {:ok, _key} <-
-             upsert_key(strategy, user, credential_id, public_key, sign_count, params, options),
+           {:ok, user} <- create_user(strategy, params, options, registration_data),
            {:ok, token, _claims} <- Jwt.token_for_user(user, %{}, [], context) do
         {:ok, Resource.put_metadata(user, :token, token)}
       end
@@ -267,7 +266,8 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
   end
 
   defp fetch_registration_params(params) do
-    credential = fetch_param(params, "credential")
+    web_authn_key = fetch_param(params, @web_authn_key_input) || %{}
+    credential = fetch_param(web_authn_key, "credential") || fetch_param(params, "credential")
     state_token = fetch_param(params, "state_token")
 
     if credential && state_token do
@@ -337,32 +337,42 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     end
   end
 
-  defp create_user(strategy, params, options) do
+  defp create_user(strategy, params, options, registration_data) do
     params =
-      params
-      |> Map.drop([
-        "credential",
-        "state_token",
-        "webauthn_options",
-        "identity",
-        "display_name",
-        :credential,
-        :state_token,
-        :webauthn_options,
-        :identity,
-        :display_name
-      ])
-      |> maybe_put_identity(strategy.resource, params)
+      params_for_register_action(
+        params,
+        strategy.resource,
+        strategy.key_resource,
+        registration_data
+      )
 
-    with %{name: action_name} <- Resource.Info.primary_action(strategy.resource, :create) do
-      strategy.resource
-      |> Changeset.new()
-      |> Changeset.set_context(%{private: %{ash_authentication?: true}})
-      |> Changeset.for_create(action_name, params, options)
-      |> Ash.create(options)
-    else
-      _ -> {:error, "No create action available for user resource"}
-    end
+    strategy.resource
+    |> Changeset.new()
+    |> Changeset.set_context(%{private: %{ash_authentication?: true}})
+    |> Changeset.for_create(strategy.register_action_name, params, options)
+    |> Ash.create(options)
+  end
+
+  defp params_for_register_action(params, user_resource, key_resource, registration_data) do
+    params
+    |> Map.drop([
+      "credential",
+      "credential_name",
+      "display_name",
+      "identity",
+      "key_name",
+      "state_token",
+      "webauthn_options",
+      :credential,
+      :credential_name,
+      :display_name,
+      :identity,
+      :key_name,
+      :state_token,
+      :webauthn_options
+    ])
+    |> maybe_put_identity(user_resource, params)
+    |> Map.put(@web_authn_key_input, build_key_params(key_resource, registration_data, params))
   end
 
   defp maybe_put_identity(params, resource, original_params) do
@@ -393,8 +403,11 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     end
   end
 
-  defp upsert_key(strategy, user, credential_id, public_key, sign_count, params, options) do
-    key_resource = strategy.key_resource
+  defp build_key_params(key_resource, registration_data, params) do
+    web_authn_key = fetch_param(params, @web_authn_key_input) || %{}
+
+    action_name =
+      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_upsert_action_name/1)
 
     credential_id_attr =
       key_info_value!(
@@ -408,28 +421,21 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     sign_count_attr =
       key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_sign_count_attribute_name/1)
 
-    user_id_attr =
-      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_user_id_attribute_name/1)
-
-    action_name =
-      key_info_value!(key_resource, &WebAuthnKey.Info.web_authn_key_upsert_action_name/1)
-
-    key_params =
-      %{
-        to_string(credential_id_attr) => credential_id,
-        to_string(public_key_attr) => public_key,
-        to_string(sign_count_attr) => sign_count,
-        to_string(user_id_attr) => user.id
-      }
-      |> maybe_put_key_name(key_resource, action_name, params)
-
-    key_options = Keyword.put_new_lazy(options, :domain, fn -> key_domain(key_resource) end)
-
-    key_resource
-    |> Changeset.new()
-    |> Changeset.set_context(%{private: %{ash_authentication?: true}})
-    |> Changeset.for_create(action_name, key_params, key_options)
-    |> Ash.create(key_options)
+    web_authn_key
+    |> Map.drop([
+      "credential",
+      "credential_name",
+      "key_name",
+      :credential,
+      :credential_name,
+      :key_name
+    ])
+    |> Map.merge(%{
+      to_string(credential_id_attr) => registration_data.credential_id,
+      to_string(public_key_attr) => registration_data.public_key,
+      to_string(sign_count_attr) => registration_data.sign_count
+    })
+    |> maybe_put_key_name(key_resource, action_name, web_authn_key, params)
   end
 
   defp fetch_key_by_credential(strategy, credential_id, options) do
@@ -510,8 +516,13 @@ defmodule AshAuthentication.Strategy.WebAuthn.Actions do
     end
   end
 
-  defp maybe_put_key_name(key_params, key_resource, action_name, params) do
-    key_name = fetch_param(params, "key_name") || fetch_param(params, "credential_name")
+  defp maybe_put_key_name(key_params, key_resource, action_name, web_authn_key, params) do
+    key_name =
+      fetch_param(web_authn_key, "name") ||
+        fetch_param(web_authn_key, "key_name") ||
+        fetch_param(web_authn_key, "credential_name") ||
+        fetch_param(params, "key_name") || fetch_param(params, "credential_name")
+
     key_name = normalize_optional_text(key_name)
 
     if key_name && key_name_allowed?(key_resource, action_name) do
